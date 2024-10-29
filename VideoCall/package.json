@@ -11,6 +11,7 @@
   "dependencies": {
     "agora-react-uikit": "^1.2.0",
     "agora-rtc-sdk-ng": "^4.x.x",
+    "lucide-react": "^0.454.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

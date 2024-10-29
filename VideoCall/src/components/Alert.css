@@ -1,0 +1,23 @@
+/* Alert.css */
+.alert {
+    position: relative;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .alert.default {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+  }
+  
+  .alert.destructive {
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  
+  .alert-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
