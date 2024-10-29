@@ -33,11 +33,14 @@ const VideoConference = () => {
   const [debugLog, setDebugLog] = useState([]);
   
   // New states for transcription
-  const [transcribedText, setTranscribedText] = useState('');
+  const [fullTranscript, setFullTranscript] = useState('');
+  const [currentSpeaker, setCurrentSpeaker] = useState('Representative'); // or 'User'
   const [isTranscribing, setIsTranscribing] = useState(false);
+  
   const clientRef = useRef(null);
   const recognizerRef = useRef(null);
   const audioStreamRef = useRef(null);
+
   const checkPermissions = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -89,6 +92,20 @@ const VideoConference = () => {
       throw error;
     }
   };
+  const addToTranscript = (speaker, text) => {
+    setFullTranscript(prev => {
+      const timestamp = new Date().toLocaleTimeString();
+      const newEntry = `[${timestamp}] ${speaker}: "${text.trim()}"\n`;
+      const updatedTranscript = prev + newEntry;
+      
+      // Log the update to console
+      console.log('[Transcript Updated]');
+      console.log('New Entry:', newEntry.trim());
+      console.log('Full Transcript:', updatedTranscript);
+      
+      return updatedTranscript;
+    });
+  };
   const startTranscription = async (audioTrack) => {
     try {
       if (!audioTrack) {
@@ -97,38 +114,43 @@ const VideoConference = () => {
 
       addDebugLog('Starting transcription...');
 
-      // Create a new MediaStream from the microphone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
 
-      // Configure speech services
       const speechConfig = speechsdk.SpeechConfig.fromSubscription(
         "3L9mmCFXqbJfQ7mqeCdb5UjTVFuwXlaox9VI27FMaV4urVaXn87gJQQJ99AJACGhslBXJ3w3AAAYACOGbUV6",
         "centralindia"
       );
       speechConfig.speechRecognitionLanguage = 'en-US';
 
-      // Create audio config from the microphone stream
       const audioConfig = speechsdk.AudioConfig.fromStreamInput(stream);
-      
-      // Create recognizer
       const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
       recognizerRef.current = recognizer;
 
-      addDebugLog('Speech recognizer created, setting up handlers...');
+      // Track interim results for each recognition session
+      let interimResult = '';
 
-      // Set up recognition handlers
       recognizer.recognizing = (_, event) => {
         if (event.result.text) {
-          console.log(`[Transcription Interim] ${event.result.text}`);
-          setTranscribedText(prev => prev + ' ' + event.result.text);
+          interimResult = event.result.text;
+          console.log(`[Interim ${currentSpeaker}] ${interimResult}`);
         }
       };
       
       recognizer.recognized = (_, event) => {
         if (event.result.reason === speechsdk.ResultReason.RecognizedSpeech) {
-          console.log(`[Transcription Final] ${event.result.text}`);
-          setTranscribedText(prev => prev + '\n' + event.result.text);
+          const finalText = event.result.text.trim();
+          if (finalText) {
+            console.log(`[Final ${currentSpeaker}] ${finalText}`);
+            
+            // Only add to transcript if the final result is different from interim
+            if (finalText !== interimResult.trim()) {
+              addToTranscript(currentSpeaker, finalText);
+            }
+            
+            // Reset interim result
+            interimResult = '';
+          }
         }
       };
       
@@ -137,18 +159,28 @@ const VideoConference = () => {
         if (event.reason === speechsdk.CancellationReason.Error) {
           console.error(`[Transcription Error] ${event.errorDetails}`);
           setError(`Transcription error: ${event.errorDetails}`);
+          addToTranscript('System', `Transcription Error: ${event.errorDetails}`);
         }
       };
 
-      // Start continuous recognition
+      recognizer.sessionStarted = (_, event) => {
+        console.log('[Transcription Session Started]');
+        addToTranscript('System', 'Transcription Started');
+      };
+
+      recognizer.sessionStopped = (_, event) => {
+        console.log('[Transcription Session Stopped]');
+        addToTranscript('System', 'Transcription Stopped');
+      };
+
       await recognizer.startContinuousRecognitionAsync();
-      console.log('[Transcription] Started');
       setIsTranscribing(true);
       addDebugLog('Transcription started successfully');
     } catch (error) {
       console.error('Transcription error:', error);
       setError(`Failed to start transcription: ${error.message}`);
       addDebugLog(`Transcription error: ${error.message}`);
+      addToTranscript('System', `Error: ${error.message}`);
     }
   };
 
@@ -156,6 +188,7 @@ const VideoConference = () => {
     try {
       if (recognizerRef.current) {
         await recognizerRef.current.stopContinuousRecognitionAsync();
+        addToTranscript('System', 'Transcription Ended');
         recognizerRef.current = null;
       }
       if (audioStreamRef.current) {
@@ -169,6 +202,7 @@ const VideoConference = () => {
     } catch (error) {
       console.error('Error stopping transcription:', error);
       addDebugLog(`Error stopping transcription: ${error.message}`);
+      addToTranscript('System', `Error Stopping Transcription: ${error.message}`);
     }
   };
   const leaveAndRemoveLocalStream = async () => {
@@ -413,6 +447,9 @@ const VideoConference = () => {
       setIsMicOn(!isMicOn);
     }
   };
+  const toggleSpeaker = () => {
+    setCurrentSpeaker(prev => prev === 'Representative' ? 'User' : 'Representative');
+  };
 
   const toggleCamera = async () => {
     if (localTracks[1]) {
@@ -479,17 +516,27 @@ const VideoConference = () => {
 
       {/* Transcription display */}
       <div className="transcription-container">
-        <div className="transcription-status">
-          {isTranscribing ? (
-            <div className="status-active">Transcription Active</div>
-          ) : (
-            <div className="status-inactive">Transcription Inactive</div>
+        <div className="transcription-controls">
+          <div className="transcription-status">
+            {isTranscribing ? (
+              <div className="status-active">Transcription Active</div>
+            ) : (
+              <div className="status-inactive">Transcription Inactive</div>
+            )}
+          </div>
+          
+          {isTranscribing && (
+            <button 
+              onClick={toggleSpeaker}
+              className="speaker-toggle-button"
+            >
+              Current Speaker: {currentSpeaker}
+            </button>
           )}
         </div>
         
         <div className="transcription-text">
-        trans
-          {transcribedText || 'Waiting for speech...'}
+          <pre>{fullTranscript || 'Waiting for speech...'}</pre>
         </div>
       </div>
 
