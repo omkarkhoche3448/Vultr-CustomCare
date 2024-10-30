@@ -1,3 +1,5 @@
+// Here need to add service implementation for the AI response
+
 import { useEffect, useState } from "react";
 
 const fetchAIResponse = async (conversation) => {

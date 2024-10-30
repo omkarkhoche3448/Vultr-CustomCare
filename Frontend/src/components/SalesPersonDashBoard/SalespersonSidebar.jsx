@@ -8,13 +8,7 @@ const icons = [
   { id: 4, name: "Users", Icon: Users },
 ];
 
-export default function Sidebar() {
-  const [selectedIcon, setSelectedIcon] = useState(1);
-
-  const handleIconClick = (id) => {
-    setSelectedIcon(id);
-  };
-
+export default function SalespersonSidebar({ selectedIcon, onIconClick }) {
   return (
     <div className="lg:relative">
       {/* Desktop Sidebar */}
@@ -41,7 +35,7 @@ export default function Sidebar() {
             <div
               key={id}
               className="relative cursor-pointer"
-              onClick={() => handleIconClick(id)}
+              onClick={() => onIconClick(id)} // Call the passed onIconClick prop
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl">
                 <Icon
@@ -66,7 +60,7 @@ export default function Sidebar() {
             <div
               key={id}
               className="relative z-10 cursor-pointer"
-              onClick={() => handleIconClick(id)}
+              onClick={() => onIconClick(id)} // Call the passed onIconClick prop
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-full">
                 <Icon
@@ -88,4 +82,3 @@ export default function Sidebar() {
     </div>
   );
 };
-
