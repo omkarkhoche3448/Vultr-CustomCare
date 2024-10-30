@@ -68,14 +68,44 @@ const VideoConference = () => {
       addDebugLog('Successfully joined channel');
 
       addDebugLog('Creating audio and video tracks...');
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
+        {
+          encoderConfig: {
+            width: 640,
+            height: 480,
+            frameRate: 30,
+            bitrateMin: 400,
+            bitrateMax: 1000,
+          }
+        },
+        {
+          encoderConfig: {
+            sampleRate: 48000,
+            stereo: true,
+            bitrate: 128,
+          }
+        }
+      );
       
       setLocalTracks([audioTrack, videoTrack]);
       addDebugLog('Local tracks created');
 
+      // Ensure container exists before playing
       const localPlayer = document.getElementById('local-video-container');
       if (localPlayer && videoTrack) {
-        videoTrack.play(localPlayer);
+        // Clear any existing content
+        localPlayer.innerHTML = '';
+        // Create a new container for the video
+        const videoElement = document.createElement('div');
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
+        localPlayer.appendChild(videoElement);
+        
+        // Play video with optimization options
+        await videoTrack.play(videoElement, { 
+          fit: 'contain',
+          mirror: true
+        });
         addDebugLog('Local video playing');
       }
 
@@ -92,6 +122,7 @@ const VideoConference = () => {
       throw error;
     }
   };
+
   const addToTranscript = (speaker, text) => {
     setFullTranscript(prev => {
       const timestamp = new Date().toLocaleTimeString();
@@ -288,13 +319,25 @@ const VideoConference = () => {
       if (mediaType === 'video') {
         const remotePlayer = document.getElementById('remote-video-container');
         if (remotePlayer) {
-          user.videoTrack.play(remotePlayer);
+          // Clear existing content
+          remotePlayer.innerHTML = '';
+          // Create new container for video
+          const videoElement = document.createElement('div');
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          remotePlayer.appendChild(videoElement);
+          
+          // Play video with optimization options
+          await user.videoTrack.play(videoElement, {
+            fit: 'contain',
+            mirror: false
+          });
           addDebugLog(`Playing remote video from user ${user.uid}`);
         }
       }
 
       if (mediaType === 'audio') {
-        user.audioTrack.play();
+        await user.audioTrack.play();
         addDebugLog(`Playing remote audio from user ${user.uid}`);
       }
 
@@ -309,7 +352,6 @@ const VideoConference = () => {
       }, 1000);
     }
   };
-
 
 
   const addDebugLog = (message) => {
@@ -452,12 +494,35 @@ const VideoConference = () => {
   };
 
   const toggleCamera = async () => {
-    if (localTracks[1]) {
-      await localTracks[1].setEnabled(!isCameraOn);
-      setIsCameraOn(!isCameraOn);
+    try {
+      const videoTrack = localTracks[1];
+      if (videoTrack) {
+        await videoTrack.setEnabled(!isCameraOn);
+        
+        // If turning camera on, ensure video is playing
+        if (!isCameraOn) {
+          const localPlayer = document.getElementById('local-video-container');
+          if (localPlayer) {
+            localPlayer.innerHTML = '';
+            const videoElement = document.createElement('div');
+            videoElement.style.width = '100%';
+            videoElement.style.height = '100%';
+            localPlayer.appendChild(videoElement);
+            await videoTrack.play(videoElement, { 
+              fit: 'contain',
+              mirror: true 
+            });
+          }
+        }
+        
+        setIsCameraOn(!isCameraOn);
+        addDebugLog(`Camera ${!isCameraOn ? 'enabled' : 'disabled'}`);
+      }
+    } catch (error) {
+      addDebugLog(`Error toggling camera: ${error.message}`);
+      setError('Failed to toggle camera');
     }
   };
-
   return (
     <div className="video-conference">
       {/* Left Column - Consumers List */}
