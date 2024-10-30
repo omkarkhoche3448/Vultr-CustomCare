@@ -460,133 +460,107 @@ const VideoConference = () => {
 
   return (
     <div className="video-conference">
-      {/* Consumers List Section */}
+      {/* Left Column - Consumers List */}
       <div className="consumers-section">
         <h2 className="consumers-title">Consumers</h2>
-        <div>
+        <div className="consumer-list">
           {consumers.map((consumer) => (
             <div key={consumer.email} className="consumer-card">
               <h3 className="consumer-name">{consumer.name}</h3>
               <p className="consumer-email">{consumer.email}</p>
-              <div className="consumer-actions">
-                <button
-                  onClick={() => generateMeetingLink(consumer.email)}
-                  disabled={cooldowns[consumer.email] > 0 || activeCall}
-                  className="invite-button"
-                >
-                  {cooldowns[consumer.email] > 0 ? (
-                    <>
-                      <Timer size={16} />
-                      {cooldowns[consumer.email]}s
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} />
-                      {activeCall ? 'In Call' : 'Invite'}
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={() => generateMeetingLink(consumer.email)}
+                disabled={cooldowns[consumer.email] > 0 || activeCall}
+                className="invite-button"
+              >
+                {cooldowns[consumer.email] > 0 ? (
+                  <>
+                    <Timer size={16} />
+                    {cooldowns[consumer.email]}s
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    {activeCall ? 'In Call' : 'Invite'}
+                  </>
+                )}
+              </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Video Section */}
-      <div className="video-section">
-        <div className="video-container">
-          <div id="local-video-container" className="video-frame">
-            {!localTracks.length && 'Your Video'}
+      {/* Middle Column - Videos and Controls */}
+      <div className="videos-section">
+        <div className="videos-container">
+          <div className="video-frame">
+            <div id="local-video-container">
+              {!localTracks.length && 'Your Video'}
+            </div>
           </div>
-        </div>
-        <div className="video-container">
-          <div id="remote-video-container" className="video-frame">
-            {Object.keys(remoteUsers).length === 0 && 'Consumer Video'}
+          
+          <div className="video-frame">
+            <div id="remote-video-container">
+              {Object.keys(remoteUsers).length === 0 && 'Consumer Video'}
+            </div>
           </div>
-        </div>
-      </div>
-      <div className="video-grid">
-        <div id="remote-video-container" className="video-frame">
-          {Object.keys(remoteUsers).length === 0 && 'Waiting for participants...'}
-        </div>
-        <div id="local-video-container" className="video-frame">
-          {!localTracks.length && 'Your Video'}
+          
+          <div className="controls-container">
+            <button
+              onClick={toggleCamera}
+              disabled={!localTracks.length}
+              className={`control-button camera ${!isCameraOn ? 'off' : ''}`}
+            >
+              <Camera size={24} />
+            </button>
+            <button
+              onClick={toggleMic}
+              disabled={!localTracks.length}
+              className={`control-button mic ${!isMicOn ? 'off' : ''}`}
+            >
+              <Mic size={24} />
+            </button>
+            <button
+              onClick={leaveAndRemoveLocalStream}
+              disabled={!activeCall}
+              className="control-button end-call"
+            >
+              <PhoneOff size={24} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Transcription display */}
-      <div className="transcription-container">
-        <div className="transcription-controls">
+      {/* Right Column - Transcription */}
+      <div className="transcription-section">
+        <div className="transcription-header">
           <div className="transcription-status">
-            {isTranscribing ? (
-              <div className="status-active">Transcription Active</div>
-            ) : (
-              <div className="status-inactive">Transcription Inactive</div>
+            <div className="status-indicator">
+              <div className={`status-dot ${isTranscribing ? 'active' : 'inactive'}`}></div>
+              <span>{isTranscribing ? 'Transcription Active' : 'Transcription Inactive'}</span>
+            </div>
+            {isTranscribing && (
+              <button 
+                onClick={toggleSpeaker}
+                className="speaker-button"
+              >
+                Speaker: {currentSpeaker}
+              </button>
             )}
           </div>
-          
-          {isTranscribing && (
-            <button 
-              onClick={toggleSpeaker}
-              className="speaker-toggle-button"
-            >
-              Current Speaker: {currentSpeaker}
-            </button>
-          )}
         </div>
-        
-        <div className="transcription-text">
-          <pre>{fullTranscript || 'Waiting for speech...'}</pre>
+        <div className="transcription-content">
+          <pre className="transcription-text">
+            {fullTranscript || 'Waiting for speech...'}
+          </pre>
         </div>
       </div>
 
-      {/* Controls Section */}
-      <div className="controls-section">
-        <div className="flex-1">
-          {activeCall && (
-            <div className="active-call-info">
-              <h3 className="active-call-title">Active Call</h3>
-              <p className="active-call-channel">Channel: {activeCall.channelName}</p>
-            </div>
-          )}
-          
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-          
-        <div className="controls-buttons">
-          <button
-            onClick={toggleCamera}
-            disabled={!localTracks.length}
-            className={`control-button camera ${!isCameraOn ? 'off' : ''}`}
-          >
-            <Camera size={24} />
-          </button>
-          <button
-            onClick={toggleMic}
-            disabled={!localTracks.length}
-            className={`control-button mic ${!isMicOn ? 'off' : ''}`}
-          >
-            <Mic size={24} />
-          </button>
-          <button
-            onClick={leaveAndRemoveLocalStream}
-            disabled={!activeCall}
-            className="control-button end-call"
-          >
-            <PhoneOff size={24} />
-          </button>
-        </div>
-      </div>
-
-      {/* Meeting Link Alert */}
+      {/* Meeting Link Alert Modal */}
       {showAlert && (
-        <div className="meeting-link-alert">
-          <div className="meeting-link-header">
-            <h3 className="meeting-link-title">Meeting Link</h3>
+        <div className="meeting-link-modal">
+          <div className="modal-header">
+            <h3 className="modal-title">Meeting Link</h3>
             <button 
               onClick={() => setShowAlert(false)}
               className="close-button"
@@ -594,8 +568,8 @@ const VideoConference = () => {
               ×
             </button>
           </div>
-          <p className="meeting-link-content">Meeting link generated for {selectedEmail}:</p>
-          <div className="meeting-link-url">
+          <p>Meeting link generated for {selectedEmail}:</p>
+          <div className="meeting-link-box">
             {meetingLink}
           </div>
           <button
@@ -607,19 +581,10 @@ const VideoConference = () => {
           </button>
         </div>
       )}
+
+      {/* Debug Log */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="debug-log" style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          right: 0, 
-          maxWidth: '300px',
-          maxHeight: '200px',
-          overflow: 'auto',
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '10px',
-          fontSize: '12px'
-        }}>
+        <div className="debug-log">
           {debugLog.map((log, i) => (
             <div key={i}>{log}</div>
           ))}

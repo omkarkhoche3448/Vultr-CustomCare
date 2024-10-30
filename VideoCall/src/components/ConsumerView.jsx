@@ -275,12 +275,13 @@ const ConsumerView = () => {
           <div className="video-grid">
             <div className="video-container main">
               <div id="remote-video-container" className="video-frame">
-                {Object.keys(remoteUsers).length === 0 && 'Waiting for host...'}
+              {!localTracks.length && 'Your Video'}
               </div>
             </div>
             <div className="video-container secondary">
               <div id="local-video-container" className="video-frame">
-                {!localTracks.length && 'Your Video'}
+               
+                {Object.keys(remoteUsers).length === 0 && 'Waiting for host...'}
               </div>
             </div>
           </div>
