@@ -7,22 +7,27 @@ const { SIGNUP_API, LOGIN_API } = endpoints;
 
 export function signUp(userData) {
   return async (dispatch) => {
-    const toastId = toast.loading("Signing up...");
+    const toastId = toast.loading("Creating your account...");
     dispatch(setLoading(true));
+    
     try {
       const response = await apiConnector("POST", SIGNUP_API, userData);
-      console.log("SIGN-UP RESPONSE:", response); 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
+      
+      console.log("Service Response:", response);
+      return response;
 
-      toast.success("Registration successful!");
-      return response.data; 
     } catch (error) {
-      console.error("SIGN-UP ERROR:", error);
-      dispatch(setError(error?.response?.data?.message || "Registration failed."));
-      toast.error(error?.response?.data?.message || "Registration failed.");
+      console.error("Signup Error:", error);
+      
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Failed to create account";
+      
+      dispatch(setError(errorMessage));
+      toast.error(errorMessage);
       throw error;
+      
     } finally {
       dispatch(setLoading(false));
       toast.dismiss(toastId);
@@ -30,47 +35,40 @@ export function signUp(userData) {
   };
 }
 
-// Sign-in service function
 export function signIn(credentials) {
   return async (dispatch) => {
-    const toastId = toast.loading("Logging in...");
+    const toastId = toast.loading("Signing you in...");
     dispatch(setLoading(true));
-    try {
-      const response = await apiConnector("POST", LOGIN_API, credentials);
-      console.log("LOGIN RESPONSE:", response); // Log the response
+    dispatch(setError(null));
 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-
-      toast.success("Login successful!");
-
+    const response = await apiConnector("POST", LOGIN_API, credentials);
+    
+    // Check if we have both token and user in the response
+    if (response.data.token && response.data.user) {
       const userData = {
         user: {
-          ...response.data.user,
+          id: response.data.user.id,
+          username: response.data.user.username,
+          email: response.data.user.email,
+          role: response.data.user.role
         },
         token: response.data.token
       };
-      dispatch(setUser(userData));
 
-      return userData; // Return user data for further use
-    } catch (error) {
-      console.error("LOGIN ERROR:", error); // Log the error
-      dispatch(setError(error?.response?.data?.message || "Login failed."));
-      toast.error(error?.response?.data?.message || "Login failed.");
-      throw error; // Rethrow error for further handling in component
-    } finally {
+      dispatch(setUser(userData));
+      toast.success("Welcome back!");
       dispatch(setLoading(false));
       toast.dismiss(toastId);
+      
+      return userData;
     }
   };
 }
 
-// Logout service function
 export function logout(navigate) {
   return (dispatch) => {
     dispatch(logoutAction());
-    toast.success("Logged Out");
+    toast.success("Logged out successfully");
     navigate("/");
   };
 }

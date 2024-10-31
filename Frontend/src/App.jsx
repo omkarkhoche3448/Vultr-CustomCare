@@ -4,27 +4,18 @@ import SignIn from "./components/Auth/Signin";
 import SignUp from "./components/Auth/Signup";
 import SalespersonDashboard from "./components/SalespersonDashboard/SalespersonDashboard"; 
 // import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
+// import NotFound from "./components/NotFound"; // Optional: Add a NotFound component
 
 export default function App() {
   return (
     <Routes>
-      {/* Route for Admin Dashboard with user ID */}
-      {/* <Route
-        path="/admin/dashboard/:userId/*"
-        element={
-          // <PrivateRoute>
-            <AdminDashboard />
-          // </PrivateRoute>
-        }
-      /> */}
-
-      {/* Route for Salesperson Dashboard with user ID */}
+      {/* Salesperson Dashboard */}
       <Route
-        path="/salesperson/dashboard/:userId/*"
+        path="/dashboard/*" // Using route parameters for userRole and userId
         element={
-          // <PrivateRoute>
+          <PrivateRoute>
             <SalespersonDashboard />
-          // </PrivateRoute>
+          </PrivateRoute>
         }
       />
 
@@ -34,13 +25,8 @@ export default function App() {
 
       {/* Catch-All Route */}
       <Route 
-        path="*" 
-        element={
-          // Uncomment below to protect the route with PrivateRoute
-          // <PrivateRoute>
-            <SalespersonDashboard />
-          // </PrivateRoute>
-        } 
+        path="/signin" 
+        element={<SignIn />} // Optional: Show "Not Found" instead of redirecting to the dashboard
       />
     </Routes>
   );

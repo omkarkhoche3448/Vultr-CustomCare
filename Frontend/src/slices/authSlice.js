@@ -1,18 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  user: localStorage.getItem('user') 
-    ? JSON.parse(localStorage.getItem('user')) 
-    : null,
-  token: localStorage.getItem('token')
-    ? JSON.parse(localStorage.getItem('token'))
-    : null,
+  user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null,
+  token: localStorage.getItem("token") ? JSON.parse(localStorage.getItem("token")) : null,
   isLoading: false,
-  error: null,
+  error: null
 };
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     setLoading: (state, action) => {
@@ -20,23 +16,31 @@ const authSlice = createSlice({
       state.error = null;
     },
     setError: (state, action) => {
-      state.isLoading = false;
       state.error = action.payload;
+      state.isLoading = false;
     },
     setUser: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isLoading = false;
-      state.error = null;
-      localStorage.setItem('token', JSON.stringify(action.payload.token));
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
+      try {
+        const { user, token } = action.payload;
+        state.user = user;
+        state.token = token;
+        state.isLoading = false;
+        state.error = null;
+        
+        // Store in localStorage
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("token", JSON.stringify(token));
+      } catch (error) {
+        console.error("Error setting user data:", error);
+        state.error = "Failed to save user data";
+      }
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.error = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
     clearError: (state) => {
       state.error = null;

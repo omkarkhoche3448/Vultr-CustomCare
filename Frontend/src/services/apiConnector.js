@@ -1,19 +1,28 @@
 import axios from "axios";
 
-export const axiosInstance = axios.create({});
+// Create an axios instance with the baseURL and default headers
+export const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', // Set baseURL directly here
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
-export const apiConnector = (method, url, bodyData, headers, params) => {
+// Define the API connector function to handle various requests
+export const apiConnector = (method, url, bodyData = null, options = {}) => {
   console.log("Method:", method);
   console.log("URL:", url);
   console.log("Body Data:", bodyData);
-  console.log("Headers:", headers);
-  console.log("Params:", params);
+  console.log("Options:", options);
+
+  // Extract headers and params from options
+  const { headers = {}, params = {} } = options;
 
   return axiosInstance({
-    method: `${method}`,
-    url: `${url}`,
-    data: bodyData ? bodyData : null,
-    headers: headers ? headers : null,
-    params: params ? params : null,
+    method: method,
+    url: url,
+    data: bodyData,
+    headers: headers,
+    params: params
   });
 };
