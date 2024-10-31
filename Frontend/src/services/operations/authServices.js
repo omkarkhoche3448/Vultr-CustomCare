@@ -62,13 +62,17 @@ export function signIn(credentials) {
       
       return userData;
     }
+    
   };
 }
 
-export function logout(navigate) {
-  return (dispatch) => {
+export function logout() {
+  return (dispatch, getState) => {
     dispatch(logoutAction());
     toast.success("Logged out successfully");
-    navigate("/");
+    
+    return (navigate) => {
+      navigate("/");
+    };
   };
 }

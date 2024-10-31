@@ -21,7 +21,14 @@ export default function SignIn() {
 
   useEffect(() => {
     if (token && user) {
-      navigate(`/dashboard/home`);
+      // Redirect based on user role
+      if (user.role === 'Admin') {
+        navigate('/admin-dashboard'); // Redirect to Admin Dashboard
+      } else if (user.role === 'Representative') {
+        navigate('/dashboard/home'); // Redirect to Salesperson Dashboard
+      } else {
+        navigate('/signin'); // Default redirect
+      }
     }
     return () => {
       dispatch(clearError());
@@ -53,10 +60,6 @@ export default function SignIn() {
               placeholder="Email"
               {...register("email", {
                 required: "Email is required",
-                // pattern: {
-                //   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                //   message: "Invalid email address",
-                // },
               })}
               className={`mt-1 block w-full h-12 px-4 rounded-lg border shadow-sm
                 ${errors.email ? "border-red-500" : "border-gray-300"}`}
@@ -73,11 +76,7 @@ export default function SignIn() {
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               {...register("password", {
-                // required: "Password is required",
-                // minLength: {
-                //   value: 6,
-                //   message: "Password must be at least 6 characters",
-                // },
+                required: "Password is required",
               })}
               className={`mt-1 block w-full h-12 px-4 rounded-lg border shadow-sm
                 ${errors.password ? "border-red-500" : "border-gray-300"}`}

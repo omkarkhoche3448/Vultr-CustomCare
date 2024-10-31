@@ -1,19 +1,28 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom"; 
 import PrivateRoute from "./components/Auth/PrivateRoute";
 import SignIn from "./components/Auth/Signin";
 import SignUp from "./components/Auth/Signup";
 import SalespersonDashboard from "./components/SalespersonDashboard/SalespersonDashboard"; 
-// import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
-// import NotFound from "./components/NotFound"; // Optional: Add a NotFound component
+import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 
 export default function App() {
   return (
     <Routes>
-      {/* Salesperson Dashboard */}
+      {/* Admin Dashboard Route */}
       <Route
-        path="/dashboard/*" // Using route parameters for userRole and userId
+        path="/admin-dashboard/*"
         element={
-          <PrivateRoute>
+          <PrivateRoute requiredRole="Admin"> {/* Set requiredRole to "admin" */}
+            <AdminDashboard />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Salesperson Dashboard Route */}
+      <Route
+        path="/dashboard/*"
+        element={
+          <PrivateRoute requiredRole="Representative"> {/* Set requiredRole to "salesperson" */}
             <SalespersonDashboard />
           </PrivateRoute>
         }
@@ -23,11 +32,8 @@ export default function App() {
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
 
-      {/* Catch-All Route */}
-      <Route 
-        path="/signin" 
-        element={<SignIn />} // Optional: Show "Not Found" instead of redirecting to the dashboard
-      />
+      {/* Optional: Catch-All Route */}
+      <Route path="*" element={<Navigate to="/signin" />} />
     </Routes>
   );
 }

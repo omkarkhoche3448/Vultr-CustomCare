@@ -2,13 +2,17 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { 
+  endpoints
+} from '../api';
+
+const {
     CREATE_TASK_API, 
     ASSIGN_TASK_API, 
     GET_ADMIN_TASKS_API, 
     GET_REPRESENTATIVES_API, 
     GET_CUSTOMERS_API, 
     UPLOAD_CSV_API 
-} from './endpoints'; // Destructure endpoints
+}= endpoints;
 
 // Service to create a new task
 export const createTask = async (taskData) => {
