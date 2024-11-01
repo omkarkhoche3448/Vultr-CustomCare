@@ -1,11 +1,10 @@
-import { Home, List, Users, FileText, Upload } from "lucide-react";
+import { Home, List, Users, FileText } from "lucide-react";
 
 const adminIcons = [
     { id: 1, name: "Dashboard", Icon: Home },
     { id: 2, name: "Tasks", Icon: List },
     { id: 3, name: "Representatives", Icon: Users },
     { id: 4, name: "Customers", Icon: FileText },
-    { id: 5, name: "CSV Upload", Icon: Upload },
 ];
 
 export default function AdminSidebar({ selectedIcon, onIconClick }) {

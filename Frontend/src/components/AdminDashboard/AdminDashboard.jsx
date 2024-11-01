@@ -4,13 +4,15 @@ import { useDispatch } from "react-redux";
 import DashboardHeader from "../SalesPersonDashBoard/DashboardHeader";
 import AdminSidebar from "./AdminSidebar";
 import TaskDashboard from "./Task/TaskDashBoard";
-import RepresentativeList from "./Representative/RepresentativeList";
-import CustomerList from "./Customer/CustomerList";
-import UploadCSV from "./UploadCSV";
+import RepresentativesDashboard from "./Representative/RepresentativesDashboard";
+import CustomerDashboard from "./Customer/CustomerDashboard";
 import { logout } from "../../services/operations/authServices";
+import { fetchRepresentatives, fetchCustomers, fetchTasks, } from "../../services/operations/adminServices";
+import AdminHome  from "./home/AdminHome";
+
 
 const routeConfig = {
-  home: { id: 1, component: () => <h2>Admin Home</h2> },
+  home: { id: 1, component: () => <AdminHome/> },
   tasks: {
     id: 2,
     component: () => (
@@ -19,10 +21,9 @@ const routeConfig = {
   },
   representatives: {
     id: 3,
-    component: () => <RepresentativeList representatives={[]} />,
+    component: () => <RepresentativesDashboard representatives={[]} />,
   },
-  customers: { id: 4, component: () => <CustomerList customers={[]} /> },
-  csv: { id: 5, component: () => <UploadCSV onUpload={() => {}} /> },
+  customers: { id: 4, component: () => <CustomerDashboard customers={[]} /> },
 };
 
 const idToRoute = {
@@ -30,7 +31,6 @@ const idToRoute = {
   2: "tasks",
   3: "representatives",
   4: "customers",
-  5: "csv",
 };
 
  function AdminDashboard() {
