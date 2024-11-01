@@ -1,239 +1,187 @@
-// taskslices use kr backend sevices use kr ani api calls handling doned then
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
-import React, { useState } from "react";
-import { Plus, Search, ChevronDown, Filter } from "lucide-react";
-import TaskTable from "./TaskTable";
-import TaskForm from "./TaskForm";
-import Modal from "../Modal";
-import SearchBar from "../SearchBar";
-
-const TaskDashboard = () => {
+const RepresentativeTaskDashboard = () => {
   // State management
-  const [tasks, setTasks] = useState([
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [pageSize] = useState(10);
+
+  // Mock dispatch and selector (you'll replace with actual Redux setup)
+  const dispatch = useDispatch();
+  const tasks = [
     {
       id: 1,
-      projectTitle: "Website Redesign",
-      description:
-        "Complete overhaul of client website with modern design principles",
-      script:
-        "Initial consultation completed. Design phase beginning next week.",
-      customerName: "Acme Corp",
-      keywords: ["web design", "UI/UX", "responsive"],
-      assignedMembers: [{ id: 2, name: "Jane Smith", role: "Developer" }],
-      status: "in-progress",
+      title: 'Follow up on Sales Lead',
+      description: 'Contact potential client from recent marketing campaign',
+      status: 'ACTIVE',
+      priority: 'High',
+      assignedDate: '2024-02-15',
+      dueDate: '2024-02-20'
     },
     {
       id: 2,
-      projectTitle: "Mobile App Development",
-      description: "Create a new mobile app for inventory management",
-      script:
-        "Requirements gathering phase. Architecture planning in progress.",
-      customerName: "TechStart Inc",
-      keywords: ["mobile", "iOS", "Android", "inventory"],
-      assignedMembers: [
-        { id: 3, name: "Mike Johnson", role: "Mobile Developer" },
-      ],
-      status: "pending",
+      title: 'Prepare Sales Presentation',
+      description: 'Create a comprehensive pitch deck for upcoming client meeting',
+      status: 'PENDING',
+      priority: 'Medium',
+      assignedDate: '2024-02-10',
+      dueDate: '2024-02-25'
     },
-  ]);
-
-  const [teamMembers] = useState([
-    { id: 1, name: "John Doe", role: "Lead Designer" },
-    { id: 2, name: "Jane Smith", role: "Developer" },
-    { id: 3, name: "Mike Johnson", role: "Mobile Developer" },
-    { id: 4, name: "Sarah Wilson", role: "Project Manager" },
-    { id: 5, name: "Tom Brown", role: "UI/UX Designer" },
-  ]);
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-
-  // Status options for filter
-  const statusOptions = [
-    "all",
-    "completed",
-    "in-progress",
-    "pending",
-    "cancelled",
+    {
+      id: 3,
+      title: 'Client Meeting Follow-up',
+      description: 'Send detailed proposal after initial discussion',
+      status: 'COMPLETED',
+      priority: 'Low',
+      assignedDate: '2024-02-05',
+      dueDate: '2024-02-15'
+    }
   ];
 
-  // Event Handlers
-  const handleCreateTask = (taskData) => {
-    const newTask = {
-      id: tasks.length + 1,
-      ...taskData,
-      status: "pending",
-    };
-    setTasks([...tasks, newTask]);
-    setIsCreateModalOpen(false);
+  // Status filter handler
+  const handleStatusChange = (e) => {
+    setStatusFilter(e.target.value);
+    setCurrentPage(1);
   };
 
-  const handleUpdateTask = (taskData) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === selectedTask.id ? { ...task, ...taskData } : task
-      )
-    );
-    setIsUpdateModalOpen(false);
-    setSelectedTask(null);
-  };
+  // Filter tasks based on status
+  const filteredTasks = tasks.filter(task => 
+    statusFilter === 'ALL' || task.status === statusFilter
+  );
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
-  };
+  // Pagination logic
+  const indexOfLastTask = currentPage * pageSize;
+  const indexOfFirstTask = indexOfLastTask - pageSize;
+  const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
+  const totalPages = Math.ceil(filteredTasks.length / pageSize);
 
-  const handleEditClick = (task) => {
-    setSelectedTask(task);
-    setIsUpdateModalOpen(true);
-  };
-
-  const handleFilterClick = () => {
-    setShowFilterDropdown(!showFilterDropdown);
-  };
-
-  const handleStatusSelect = (status) => {
-    setFilterStatus(status);
-    setShowFilterDropdown(false);
-  };
-
-  // Filter tasks based on search query and status
-  const filteredTasks = tasks
-    .filter(
-      (task) =>
-        task.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter((task) =>
-      filterStatus === "all" ? true : task.status === filterStatus
-    );
-
-  // Click outside handler for filter dropdown
-  React.useEffect(() => {
-    const handleClickOutside = () => {
-      setShowFilterDropdown(false);
-    };
-
-    if (showFilterDropdown) {
-      document.addEventListener("click", handleClickOutside);
+  // Priority color mapping
+  const getPriorityColor = (priority) => {
+    switch(priority) {
+      case 'High': return 'bg-red-100 text-red-800';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800';
+      case 'Low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
+  };
 
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [showFilterDropdown]);
+  // Status color mapping
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'ACTIVE': return 'bg-blue-100 text-blue-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className=" bg-gray-50 min-h-screen px-8 pt-6 pb-8 mb-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
-        <p className="text-gray-500 mt-1">
-          Manage customer Task and Team assignments
-        </p>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex items-center gap-4">
-          <SearchBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            placeholder="Search Tasks..."
-          />
-
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleFilterClick();
-              }}
-              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+    <div className="container mx-auto px-4 py-8">
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center p-6 bg-gray-50 border-b">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
+            Representative Task Dashboard
+          </h1>
+          
+          {/* Status Filter */}
+          <div className="flex items-center space-x-4">
+            <label htmlFor="status-filter" className="text-gray-700 font-medium">
+              Filter by Status:
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={handleStatusChange}
+              className="form-select block w-full md:w-auto border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
             >
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm w-[20%] text-gray-700">
-                {filterStatus === "all"
-                  ? "Filter"
-                  : filterStatus.charAt(0).toUpperCase() +
-                    filterStatus.slice(1).replace("-", " ")}
-              </span>
-            </button>
-
-            {showFilterDropdown && (
-              <div className="absolute top-full mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                <div className="py-1">
-                  {statusOptions.map((status) => (
-                    <button
-                      key={status}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusSelect(status);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150 ${
-                        filterStatus === status
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {status.charAt(0).toUpperCase() +
-                        status.slice(1).replace("-", " ")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              <option value="ALL">All Tasks</option>
+              <option value="ACTIVE">Active</option>
+              <option value="PENDING">Pending</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
           </div>
         </div>
 
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 text-sm md:text-base lg:text-lg transition-colors duration-200"
-        >
-          <Plus className="w-5 h-5" />
-          Create Project
-        </button>
+        {/* Task Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-100 border-b">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {currentTasks.map((task) => (
+                <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {task.title}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {task.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(task.status)}`}>
+                      {task.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {task.assignedDate}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {task.dueDate}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {filteredTasks.length > 0 && (
+          <div className="flex items-center justify-between bg-white px-4 py-3 border-t">
+            <div className="flex-1 flex justify-between items-center">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-700">
+                Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* No Tasks Message */}
+        {filteredTasks.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No tasks found matching the selected filter.
+          </div>
+        )}
       </div>
-
-      <TaskTable
-        tasks={filteredTasks}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteTask}
-      />
-
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Project"
-      >
-        <TaskForm
-          teamMembers={teamMembers}
-          onSubmit={handleCreateTask}
-          onCancel={() => setIsCreateModalOpen(false)}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isUpdateModalOpen}
-        onClose={() => {
-          setIsUpdateModalOpen(false);
-          setSelectedTask(null);
-        }}
-        title="Update Project"
-      >
-        <TaskForm
-          task={selectedTask}
-          teamMembers={teamMembers}
-          onSubmit={handleUpdateTask}
-          onCancel={() => {
-            setIsUpdateModalOpen(false);
-            setSelectedTask(null);
-          }}
-          isUpdate={true}
-        />
-      </Modal>
     </div>
   );
 };
 
-export default TaskDashboard;
+export default RepresentativeTaskDashboard;

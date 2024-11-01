@@ -4,7 +4,7 @@ const initialState = {
     tasks: [],
     loading: false,
     error: null,
-    userRole: null, // This can be set based on logged-in user's role
+    userRole: null, 
 };
 
 const taskSlice = createSlice({

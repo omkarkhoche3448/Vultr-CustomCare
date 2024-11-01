@@ -4,6 +4,8 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import SalespersonSidebar from "./SalespersonSidebar";
 import CallList from "./Calling/CallList";
 import TaskDashboard from "./SalesPersonTask/TaskDashboard";
+import RepresentativeTaskDashboard from  "./RepresentativeTask/RepresentativeTaskDashboard";
+
 import DashboardHeader from './DashboardHeader';
 import {logout} from  "../../services/operations/authServices"
 
@@ -14,17 +16,12 @@ const UsersContent = () => (
   </div>
 );
 
-const ClockContent = () => (
-  <div>
-    <h2>Schedule Management</h2>
-  </div>
-);
 
 // Define routes and their corresponding components and IDs
 const routeConfig = {
   tasks: { id: 1, component: TaskDashboard },
   calls: { id: 2, component: CallList },
-  schedule: { id: 3, component: ClockContent },
+  schedule: { id: 3, component: RepresentativeTaskDashboard },
   users: { id: 4, component: UsersContent },
 };
 

@@ -1,254 +1,235 @@
 import { toast } from "react-hot-toast";
-import { 
-    setLoading, 
-    setTasks, 
-    setError,
-    addTask as addTaskAction,
-    updateTask as updateTaskAction,
-    deleteTask as deleteTaskAction 
+import {
+  setLoading,
+  setTasks,
+  setError,
+  addTask as addTaskAction,
+  updateTask as updateTaskAction,
+  deleteTask as deleteTaskAction,
 } from "../../slices/taskSlice";
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
 
 const {
-    GET_ASSIGNED_TASKS_API,
-    CREATE_TASK_API,
-    UPDATE_TASK_API,
-    DELETE_TASK_API,
-    GET_TASK_STATS_API
+  GET_ASSIGNED_TASKS_API,
+  CREATE_TASK_API,
+  UPDATE_TASK_API,
+  DELETE_TASK_API,
+  GET_TASK_STATS_API,
 } = endpoints;
 
-// Enhanced error handler utility
-const handleApiError = (error) => {
-    if (error.response) {
-        return error.response.data?.message || `Server error: ${error.response.status}`;
-    } else if (error.request) {
-        return 'Network error: Unable to reach server';
-    }
-    return error.message || 'An unexpected error occurred';
+const dummyTasks = [
+  {
+    _id: 1,
+    customerName: "Customer One",
+    projectTitle: "Project Alpha",
+    description: "Initial phase of Project Alpha.",
+    script: "Analyze the project requirements and create a basic blueprint.",
+    assignedTo: "John Doe",
+    status: "COMPLETED",
+    lastUpdated: "2024-10-31",
+    keywords: ["development", "frontend"],
+  },
+  {
+    _id: 2,
+    customerName: "Customer Two",
+    projectTitle: "Project Beta",
+    description: "Developing the user interface for Project Beta.",
+    script: "Create UI mockups and get client feedback.",
+    assignedTo: "Jane Smith",
+    status: "IN_PROGRESS",
+    lastUpdated: "2024-10-30",
+    keywords: ["UI/UX", "design"],
+  },
+  {
+    _id: 3,
+    customerName: "Customer Three",
+    projectTitle: "Project Gamma",
+    description: "Testing and deployment phase of Project Gamma.",
+    script: "Conduct final testing and prepare for deployment.",
+    assignedTo: "Alice Johnson",
+    status: "PENDING",
+    lastUpdated: "2024-10-29",
+    keywords: ["testing", "deployment"],
+  },
+  {
+    _id: 4,
+    customerName: "Customer Four",
+    projectTitle: "Project Delta",
+    description: "Initial planning and design for Project Delta.",
+    script: "Outline project goals and deliverables.",
+    assignedTo: "Mark Brown",
+    status: "COMPLETED",
+    lastUpdated: "2024-10-28",
+    keywords: ["planning", "strategy"],
+  },
+  {
+    _id: 5,
+    customerName: "Customer Five",
+    projectTitle: "Project Epsilon",
+    description: "Data analysis and reporting for Project Epsilon.",
+    script: "Gather data and create analytical reports.",
+    assignedTo: "Emma Wilson",
+    status: "IN_PROGRESS",
+    lastUpdated: "2024-10-27",
+    keywords: ["data", "analytics"],
+  },
+  {
+    _id: 6,
+    customerName: "Customer Six",
+    projectTitle: "Project Zeta",
+    description: "Final review and feedback for Project Zeta.",
+    script: "Collect feedback from stakeholders and finalize documentation.",
+    assignedTo: "Michael Davis",
+    status: "PENDING",
+    lastUpdated: "2024-10-26",
+    keywords: ["review", "feedback"],
+  },
+];
+
+// Fetch tasks with simulated API call
+export const fetchTasks = () => async (dispatch) => {
+  dispatch(setLoading(true)); // Set loading state to true
+
+  try {
+    // Simulate network delay with a timeout
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    dispatch(setTasks(dummyTasks)); // Dispatch the action to set tasks
+  } catch (error) {
+    dispatch(setError(error.message)); // Dispatch error action if something goes wrong
+  } finally {
+    dispatch(setLoading(false)); // Reset loading state
+  }
 };
-
-// Generic API request handler with authentication
-const makeAuthenticatedRequest = async (dispatch, getState, requestConfig) => {
-    const { auth: { token } } = getState();
-    
-    if (!token) {
-        throw new Error('Authentication required');
-    }
-
-    // Log the request configuration
-    console.log('Request config:', {
-        ...requestConfig,
-        headers: {
-            ...requestConfig.headers,
-            Authorization: `Bearer ${token}`
-        }
-    });
-
-    const response = await apiConnector(
-        requestConfig.method,
-        requestConfig.url,
-        requestConfig.data,
-        {
-            headers: {
-                ...requestConfig.headers,
-                Authorization: `Bearer ${token}`
-            },
-            params: requestConfig.params
-        }
-    );
-
-    return response.data;
-};
-
-// Fetch tasks with pagination and filtering
-export const fetchTasks = (filters = {}) => {
-    return async (dispatch, getState) => {
-        const toastId = toast.loading("Loading tasks...");
-        dispatch(setLoading(true));
-
-        try {
-            const { auth: { user } } = getState();
-            
-            const queryParams = {
-                ...filters,
-                userName: user.username,
-                page: filters.page || 1,
-                limit: filters.limit || 20
-            };
-
-            const response = await makeAuthenticatedRequest(dispatch, getState, {
-                method: "GET",
-                url: GET_ASSIGNED_TASKS_API,
-                params: queryParams
-            });
-
-            if (response.success) {
-                const processedTasks = processTasksResponse(response.tasks || [], queryParams);
-                console.log(processedTasks)
-                dispatch(setTasks(processedTasks));
-                return processedTasks;
-            } else {
-                throw new Error(response.message || 'Failed to fetch tasks');
-            }
-
-        } catch (error) {
-            console.error("Fetch tasks error:", error);
-            toast.error(handleApiError(error));
-            throw error;
-        } finally {
-            dispatch(setLoading(false));
-            toast.dismiss(toastId);
-        }
-    };
-}
-
-// Helper function to process tasks response
-const processTasksResponse = (tasks, queryParams) => {
-    const { page = 1, limit = 20, status } = queryParams;
-    
-    const filteredTasks = status && status !== 'ALL'
-        ? tasks.filter(task => task.status === status)
-        : tasks;
-
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-
-    return {
-        activeTasks: filteredTasks.slice(startIndex, endIndex),
-        pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(filteredTasks.length / limit),
-            hasNext: endIndex < filteredTasks.length,
-            hasPrevious: page > 1,
-            total: filteredTasks.length
-        }
-    };
-};
-
 // Create new task (Admin only)
 export const createTask = (taskData) => {
-    return async (dispatch, getState) => {
-        const toastId = toast.loading("Creating task...");
-        dispatch(setLoading(true));
+  return async (dispatch, getState) => {
+    const toastId = toast.loading("Creating task...");
+    dispatch(setLoading(true));
 
-        try {
-            const { task: { userRole } } = getState();
-            
-            if (userRole !== "Admin") {
-                throw new Error("Unauthorized: Only Admins can create tasks");
-            }
+    try {
+      const {
+        task: { userRole },
+      } = getState();
 
-            const response = await makeAuthenticatedRequest(dispatch, getState, {
-                method: "POST",
-                url: CREATE_TASK_API,
-                data: taskData
-            });
+      if (userRole !== "Admin") {
+        throw new Error("Unauthorized: Only Admins can create tasks");
+      }
 
-            dispatch(addTaskAction(response.task));
-            toast.success("Task created successfully");
-            return response.task;
+      const response = await makeAuthenticatedRequest(dispatch, getState, {
+        method: "POST",
+        url: CREATE_TASK_API,
+        data: taskData,
+      });
 
-        } catch (error) {
-            console.error("Create task error:", error);
-            toast.error(handleApiError(error));
-            throw error;
-        } finally {
-            dispatch(setLoading(false));
-            toast.dismiss(toastId);
-        }
-    };
-}
+      dispatch(addTaskAction(response.task));
+      toast.success("Task created successfully");
+      return response.task;
+    } catch (error) {
+      console.error("Create task error:", error);
+      toast.error(handleApiError(error));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+};
 
 // Update existing task (Admin only)
 export const updateTask = (taskId, updateData) => {
-    return async (dispatch, getState) => {
-        const toastId = toast.loading("Updating task...");
-        dispatch(setLoading(true));
+  return async (dispatch, getState) => {
+    const toastId = toast.loading("Updating task...");
+    dispatch(setLoading(true));
 
-        try {
-            const { task: { userRole } } = getState();
-            
-            if (userRole !== "Admin") {
-                throw new Error("Unauthorized: Only Admins can update tasks");
-            }
+    try {
+      const {
+        task: { userRole },
+      } = getState();
 
-            const response = await makeAuthenticatedRequest(dispatch, getState, {
-                method: "PUT",
-                url: `${UPDATE_TASK_API}/${taskId}`,
-                data: updateData
-            });
+      if (userRole !== "Admin") {
+        throw new Error("Unauthorized: Only Admins can update tasks");
+      }
 
-            dispatch(updateTaskAction(response.task));
-            toast.success("Task updated successfully");
-            return response.task;
+      const response = await makeAuthenticatedRequest(dispatch, getState, {
+        method: "PUT",
+        url: `${UPDATE_TASK_API}/${taskId}`,
+        data: updateData,
+      });
 
-        } catch (error) {
-            console.error("Update task error:", error);
-            toast.error(handleApiError(error));
-            throw error;
-        } finally {
-            dispatch(setLoading(false));
-            toast.dismiss(toastId);
-        }
-    };
-}
+      dispatch(updateTaskAction(response.task));
+      toast.success("Task updated successfully");
+      return response.task;
+    } catch (error) {
+      console.error("Update task error:", error);
+      toast.error(handleApiError(error));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+};
 
 // Delete task (Admin only)
 export const deleteTask = (taskId) => {
-    return async (dispatch, getState) => {
-        const toastId = toast.loading("Deleting task...");
-        dispatch(setLoading(true));
+  return async (dispatch, getState) => {
+    const toastId = toast.loading("Deleting task...");
+    dispatch(setLoading(true));
 
-        try {
-            const { task: { userRole } } = getState();
-            
-            if (userRole !== "Admin") {
-                throw new Error("Unauthorized: Only Admins can delete tasks");
-            }
+    try {
+      const {
+        task: { userRole },
+      } = getState();
 
-            await makeAuthenticatedRequest(dispatch, getState, {
-                method: "DELETE",
-                url: `${DELETE_TASK_API}/${taskId}`
-            });
+      if (userRole !== "Admin") {
+        throw new Error("Unauthorized: Only Admins can delete tasks");
+      }
 
-            dispatch(deleteTaskAction(taskId));
-            toast.success("Task deleted successfully");
+      await makeAuthenticatedRequest(dispatch, getState, {
+        method: "DELETE",
+        url: `${DELETE_TASK_API}/${taskId}`,
+      });
 
-        } catch (error) {
-            console.error("Delete task error:", error);
-            toast.error(handleApiError(error));
-            throw error;
-        } finally {
-            dispatch(setLoading(false));
-            toast.dismiss(toastId);
-        }
-    };
-}
+      dispatch(deleteTaskAction(taskId));
+      toast.success("Task deleted successfully");
+    } catch (error) {
+      console.error("Delete task error:", error);
+      toast.error(handleApiError(error));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+};
 
 // Get task statistics
 export const getTaskStats = () => {
-    return async (dispatch, getState) => {
-        dispatch(setLoading(true));
+  return async (dispatch, getState) => {
+    dispatch(setLoading(true));
 
-        try {
-            const { task: { userRole }, auth: { user } } = getState();
-            const params = userRole === "Representative" ? { assignedTo: user._id } : {};
+    try {
+      const {
+        task: { userRole },
+        auth: { user },
+      } = getState();
+      const params =
+        userRole === "Representative" ? { assignedTo: user._id } : {};
 
-            const response = await makeAuthenticatedRequest(dispatch, getState, {
-                method: "GET",
-                url: GET_TASK_STATS_API,
-                params
-            });
+      const response = await makeAuthenticatedRequest(dispatch, getState, {
+        method: "GET",
+        url: GET_TASK_STATS_API,
+        params,
+      });
 
-            return response.stats;
-
-        } catch (error) {
-            console.error("Fetch stats error:", error);
-            toast.error(handleApiError(error));
-            throw error;
-        } finally {
-            dispatch(setLoading(false));
-        }
-    };
-}
+      return response.stats;
+    } catch (error) {
+      console.error("Fetch stats error:", error);
+      toast.error(handleApiError(error));
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+};
