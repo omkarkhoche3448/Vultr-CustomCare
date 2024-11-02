@@ -56,7 +56,7 @@ const RepresentativesDashboard = () => {
         {/* Header Section */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="lg:text-3xl md:text-3xl text-2xl font-bold text-gray-900">
               Representatives
             </h1>
             <p className="text-gray-500 mt-1">
@@ -65,7 +65,7 @@ const RepresentativesDashboard = () => {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 text-sm md:text-base lg:text-lg"
+            className="inline-flex items-center px-2 py-2 lg:py-1 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 text-sm md:text-base lg:text-lg"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

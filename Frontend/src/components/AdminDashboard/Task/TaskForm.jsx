@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import Select from "react-select";
 import { UserCircle, X } from "lucide-react";
-import { createTask,assignTask } from "../../../services/operations/adminServices";
 
 const TaskForm = ({
   task = {},
@@ -10,39 +10,41 @@ const TaskForm = ({
   onCancel,
   isUpdate = false,
 }) => {
-  const [formData, setFormData] = useState({
-    customerName: task.customerName || "",
-    projectTitle: task.projectTitle || "",
-    description: task.description || "",
-    script: task.script || "",
-    keywords: task.keywords || [],
-    assignedMembers: task.assignedMembers || [],
-    status: task.status || "pending",
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: {
+      customerName: task.customerName || "",
+      projectTitle: task.projectTitle || "",
+      description: task.description || "",
+      script: task.script || "",
+      keywords: task.keywords || [],
+      assignedMembers: task.assignedMembers || [],
+      status: task.status || "pending",
+    },
   });
 
   const [currentKeyword, setCurrentKeyword] = useState("");
+  const keywords = watch("keywords");
 
   const handleAddKeyword = (e) => {
     e.preventDefault();
-    if (currentKeyword.trim() && !formData.keywords.includes(currentKeyword.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, currentKeyword.trim()]
-      }));
+    if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
+      setValue("keywords", [...keywords, currentKeyword.trim()]);
       setCurrentKeyword("");
     }
   };
 
   const handleRemoveKeyword = (keywordToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter(keyword => keyword !== keywordToRemove)
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
+    setValue(
+      "keywords",
+      keywords.filter((keyword) => keyword !== keywordToRemove)
+    );
   };
 
   const memberOptions = teamMembers.map((member) => ({
@@ -61,73 +63,80 @@ const TaskForm = ({
     member,
   }));
 
+  const onSubmitForm = (data) => {
+    onSubmit(data);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+      {/* Customer Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Customer Name
         </label>
         <input
           type="text"
-          required
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.customerName}
-          onChange={(e) =>
-            setFormData({ ...formData, customerName: e.target.value })
-          }
+          {...register("customerName", { required: "Customer name is required" })}
         />
+        {errors.customerName && (
+          <p className="mt-1 text-sm text-red-600">{errors.customerName.message}</p>
+        )}
       </div>
 
+      {/* Project Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Project Title
         </label>
         <input
           type="text"
-          required
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.projectTitle}
-          onChange={(e) =>
-            setFormData({ ...formData, projectTitle: e.target.value })
-          }
+          {...register("projectTitle", { required: "Project title is required" })}
         />
+        {errors.projectTitle && (
+          <p className="mt-1 text-sm text-red-600">{errors.projectTitle.message}</p>
+        )}
       </div>
 
+      {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Description
         </label>
         <textarea
-          required
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows="3"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          {...register("description", { required: "Description is required" })}
         />
+        {errors.description && (
+          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+        )}
       </div>
 
+      {/* Script */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Script
         </label>
         <textarea
-          required
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows="3"
-          value={formData.script}
-          onChange={(e) => setFormData({ ...formData, script: e.target.value })}
+          {...register("script", { required: "Script is required" })}
         />
+        {errors.script && (
+          <p className="mt-1 text-sm text-red-600">{errors.script.message}</p>
+        )}
       </div>
 
+      {/* Keywords */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Keywords
         </label>
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2 mb-2">
-            {formData.keywords.map((keyword, index) => (
+            {keywords.map((keyword, index) => (
               <span
                 key={index}
                 className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -162,30 +171,38 @@ const TaskForm = ({
         </div>
       </div>
 
+      {/* Team Members Select */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Assign Team Members
         </label>
-        <Select
-          isMulti
-          options={memberOptions}
-          value={memberOptions.filter((option) =>
-            formData.assignedMembers.includes(option.value)
+        <Controller
+          name="assignedMembers"
+          control={control}
+          rules={{ required: "Please assign at least one team member" }}
+          render={({ field }) => (
+            <Select
+              {...field}
+              isMulti
+              options={memberOptions}
+              value={memberOptions.filter((option) =>
+                field.value.includes(option.value)
+              )}
+              onChange={(selected) =>
+                field.onChange(selected ? selected.map((option) => option.value) : [])
+              }
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder="Select team members..."
+            />
           )}
-          onChange={(selected) =>
-            setFormData({
-              ...formData,
-              assignedMembers: selected
-                ? selected.map((option) => option.value)
-                : [],
-            })
-          }
-          className="react-select-container"
-          classNamePrefix="react-select"
-          placeholder="Select team members..."
         />
+        {errors.assignedMembers && (
+          <p className="mt-1 text-sm text-red-600">{errors.assignedMembers.message}</p>
+        )}
       </div>
 
+      {/* Status Select (for updates only) */}
       {isUpdate && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,18 +210,19 @@ const TaskForm = ({
           </label>
           <select
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.status}
-            onChange={(e) =>
-              setFormData({ ...formData, status: e.target.value })
-            }
+            {...register("status", { required: "Status is required" })}
           >
             <option value="pending">Pending</option>
             <option value="in-progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
+          {errors.status && (
+            <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+          )}
         </div>
       )}
 
+      {/* Form Actions */}
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="button"

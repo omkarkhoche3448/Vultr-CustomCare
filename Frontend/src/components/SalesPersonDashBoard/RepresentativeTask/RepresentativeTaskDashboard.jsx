@@ -13,13 +13,13 @@ import {
 // API Service for Task Management
 const TaskService = {
   // Dummy token for authorization (in real-world, this would come from authentication)
-  token: '',
+  token: "",
 
   // Base URL for API (replace with actual backend URL)
-  baseUrl: 'https://api.example.com/tasks',
+  baseUrl: "https://api.example.com/tasks",
 
   // Fetch Tasks
-  async fetchTasks(status = 'pending') {
+  async fetchTasks(status = "pending") {
     try {
       // Commented out actual API call for demonstration
       // const response = await fetch(`${this.baseUrl}?status=${status}`, {
@@ -29,11 +29,11 @@ const TaskService = {
       //     'Content-Type': 'application/json'
       //   }
       // });
-      
+
       // if (!response.ok) {
       //   throw new Error('Failed to fetch tasks');
       // }
-      
+
       // return await response.json();
 
       // Dummy data for demonstration
@@ -42,7 +42,8 @@ const TaskService = {
           id: 1,
           customerName: "John Smith",
           projectTitle: "Project Alpha",
-          description: "Comprehensive project analysis and initial blueprint development",
+          description:
+            "Comprehensive project analysis and initial blueprint development",
           script: "Analyze project requirements and create detailed blueprint",
           keywords: ["Analysis", "Strategic Planning", "Blueprint"],
           priority: "high",
@@ -54,17 +55,18 @@ const TaskService = {
           id: 2,
           customerName: "Emily Davis",
           projectTitle: "Project Beta",
-          description: "Comprehensive project documentation and timeline creation",
+          description:
+            "Comprehensive project documentation and timeline creation",
           script: "Document requirements and develop project timeline",
           keywords: ["Documentation", "Project Management"],
           priority: "medium",
           status: status,
           assignedTo: "representative",
           dueDate: "2024-02-20",
-        }
+        },
       ];
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error("Error fetching tasks:", error);
       return [];
     }
   },
@@ -81,24 +83,24 @@ const TaskService = {
       //   },
       //   body: JSON.stringify({ status: 'completed' })
       // });
-      
+
       // if (!response.ok) {
       //   throw new Error('Failed to complete task');
       // }
-      
+
       // return await response.json();
 
       // Dummy successful response
-      return { 
-        ...this.fetchTasks().find(task => task.id === taskId), 
-        status: 'completed',
-        completedAt: new Date().toISOString()
+      return {
+        ...this.fetchTasks().find((task) => task.id === taskId),
+        status: "completed",
+        completedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error completing task:', error);
+      console.error("Error completing task:", error);
       return null;
     }
-  }
+  },
 };
 
 // Priority color configuration (kept from original)
@@ -130,7 +132,7 @@ const RepresentativeTaskDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPriority, setSelectedPriority] = useState(null);
   const [confirmTask, setConfirmTask] = useState(null);
-  
+
   // Loading and Error States
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -141,12 +143,12 @@ const RepresentativeTaskDashboard = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Fetch tasks based on current filter
         const fetchedTasks = await TaskService.fetchTasks(filter);
         setTasks(fetchedTasks);
       } catch (err) {
-        setError('Failed to load tasks. Please try again.');
+        setError("Failed to load tasks. Please try again.");
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -172,18 +174,16 @@ const RepresentativeTaskDashboard = () => {
     try {
       setIsLoading(true);
       const completedTask = await TaskService.completeTask(taskId);
-      
+
       if (completedTask) {
         // Update tasks list
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === taskId ? completedTask : task
-          )
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskId ? completedTask : task))
         );
         setConfirmTask(null);
       }
     } catch (err) {
-      setError('Failed to complete task. Please try again.');
+      setError("Failed to complete task. Please try again.");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -211,7 +211,7 @@ const RepresentativeTaskDashboard = () => {
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+            className="inline-flex items-center px-2 py-1 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 text-sm md:text-base lg:text-lg"
           >
             Confirm
           </button>
@@ -229,7 +229,10 @@ const RepresentativeTaskDashboard = () => {
 
   // Error Message Component
   const ErrorMessage = ({ message }) => (
-    <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded relative" role="alert">
+    <div
+      className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded relative"
+      role="alert"
+    >
       <span className="block sm:inline">{message}</span>
     </div>
   );
@@ -255,7 +258,7 @@ const RepresentativeTaskDashboard = () => {
                 onClick={() => setFilter("pending")}
                 className={`px-3 py-1 rounded-md transition ${
                   filter === "pending"
-                    ? "bg-blue-500 text-white"
+                    ? "bg-purple-600 text-white  hover:bg-purple-700"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
@@ -265,7 +268,7 @@ const RepresentativeTaskDashboard = () => {
                 onClick={() => setFilter("completed")}
                 className={`px-3 py-1 rounded-md transition ${
                   filter === "completed"
-                    ? "bg-blue-500 text-white"
+                    ? " bg-purple-600 text-white  hover:bg-purple-700 "
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
@@ -309,99 +312,97 @@ const RepresentativeTaskDashboard = () => {
         {/* Loading State */}
         {isLoading ? (
           <LoadingSpinner />
+        ) : // Tasks List (kept from original, with minor modifications)
+        filteredTasks.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
+            <p className="text-lg">No tasks found</p>
+          </div>
         ) : (
-          // Tasks List (kept from original, with minor modifications)
-          filteredTasks.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
-              <p className="text-lg">No tasks found</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredTasks.map((task) => {
-                const priority = priorityConfig[task.priority];
-                return (
-                  <div
-                    key={task.id}
-                    className={`border-l-4 ${priority.border} ${priority.bg} 
+          <div className="space-y-4">
+            {filteredTasks.map((task) => {
+              const priority = priorityConfig[task.priority];
+              return (
+                <div
+                  key={task.id}
+                  className={`border-l-4 ${priority.border} ${priority.bg} 
                       rounded-lg p-4 hover:shadow-md transition duration-300 relative`}
-                  >
-                    {/* Task card content (kept from original) */}
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-bold text-gray-800">
-                            {task.projectTitle}
-                          </h3>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium 
+                >
+                  {/* Task card content (kept from original) */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="text-lg font-bold text-gray-800">
+                          {task.projectTitle}
+                        </h3>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium 
                               ${priority.badge} ${priority.text}`}
-                          >
-                            {task.priority.charAt(0).toUpperCase() +
-                              task.priority.slice(1)}
-                          </span>
+                        >
+                          {task.priority.charAt(0).toUpperCase() +
+                            task.priority.slice(1)}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-gray-600 mb-2">
+                        {task.description}
+                      </p>
+
+                      <div className="text-xs text-gray-500 space-y-1 mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Clock size={14} className="text-gray-400" />
+                          <span>{task.script}</span>
                         </div>
-
-                        <p className="text-sm text-gray-600 mb-2">
-                          {task.description}
-                        </p>
-
-                        <div className="text-xs text-gray-500 space-y-1 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <Clock size={14} className="text-gray-400" />
-                            <span>{task.script}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <User size={14} className="text-gray-400" />
-                            <span>{task.customerName}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Calendar size={14} className="text-gray-400" />
-                            <span>Due: {task.dueDate}</span>
-                          </div>
+                        <div className="flex items-center space-x-2">
+                          <User size={14} className="text-gray-400" />
+                          <span>{task.customerName}</span>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Calendar size={14} className="text-gray-400" />
+                          <span>Due: {task.dueDate}</span>
+                        </div>
+                      </div>
 
-                        {task.keywords && task.keywords.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {task.keywords.map((keyword, index) => (
-                              <span
-                                key={index}
-                                className="flex items-center space-x-1 
+                      {task.keywords && task.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {task.keywords.map((keyword, index) => (
+                            <span
+                              key={index}
+                              className="flex items-center space-x-1 
                                   bg-white/50 text-gray-700 
                                   rounded-full px-2 py-1 text-xs
                                   border border-gray-200"
-                              >
-                                <Tag size={12} className="text-gray-500" />
-                                <span>{keyword}</span>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {task.status === "pending" && (
-                        <button
-                          onClick={() => setConfirmTask(task)}
-                          className="absolute top-4 right-4 bg-green-500 text-white p-2 rounded-full 
-                            hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400
-                            transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
-                        >
-                          <Check size={20} />
-                        </button>
+                            >
+                              <Tag size={12} className="text-gray-500" />
+                              <span>{keyword}</span>
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
 
-                    {task.status === "completed" && task.completedAt && (
-                      <div className="text-xs text-gray-500 mt-2 italic">
-                        Completed on:{" "}
-                        {new Date(task.completedAt).toLocaleString()}
-                      </div>
+                    {task.status === "pending" && (
+                      <button
+                        onClick={() => setConfirmTask(task)}
+                        className="absolute top-4 right-4 bg-green-500 text-white p-2 rounded-full 
+                            hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400
+                            transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
+                      >
+                        <Check size={20} />
+                      </button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )
+
+                  {task.status === "completed" && task.completedAt && (
+                    <div className="text-xs text-gray-500 mt-2 italic">
+                      Completed on:{" "}
+                      {new Date(task.completedAt).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -415,6 +416,6 @@ const RepresentativeTaskDashboard = () => {
       )}
     </div>
   );
-};  
+};
 
 export default RepresentativeTaskDashboard;
