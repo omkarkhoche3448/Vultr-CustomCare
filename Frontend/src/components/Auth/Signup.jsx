@@ -1,32 +1,52 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import Select from 'react-select';
 import {
   setLoading,
   setError,
   setUser,
   clearError,
 } from "../../slices/authSlice";
-import { signUp } from "../../services/operations/authServices";
+import { signUp, SignUpRepresentative } from "../../services/operations/authServices";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "react-hot-toast";
+
+const specialtyOptions = [
+  { value: 'sales', label: 'Sales Representative' },
+  { value: 'customer_service', label: 'Customer Service Representative' },
+  { value: 'technical_support', label: 'Technical Support Representative' },
+  { value: 'account_management', label: 'Account Management Representative' },
+  { value: 'product_specialist', label: 'Product Specialist' }
+];
+
+const roleOptions = [
+  { value: 'Sales Representative', label: 'Sales Representative' },
+  { value: 'Admin', label: 'Admin' }
+];
 
 export default function SignUp() {
   const {
     register,
     handleSubmit,
+    control,
+    watch,
     formState: { errors },
   } = useForm();
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isLoading, error, token } = useSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
+  
+  const selectedRole = watch("role");
+  const isRepresentative = selectedRole?.value === "Sales Representative";
 
   const roleMapping = {
     "Sales Representative": "Representative",
-    Admin: "Admin",
+    "Admin": "Admin",
   };
 
   useEffect(() => {
@@ -40,23 +60,29 @@ export default function SignUp() {
 
   const onSubmit = async (data) => {
     try {
-      const mappedRole = roleMapping[data.role];
+      const mappedRole = roleMapping[data.role.value];
       const payload = {
-        username: data.username,
+        name: data.username,
         email: data.email,
         password: data.password,
         role: mappedRole,
+        ...(isRepresentative && { operations: data.specialty.value })
       };
 
       dispatch(setLoading(true));
       dispatch(clearError());
       
-      console.log("Submitting payload:", payload); // For debugging
+      // console.log("Submitting payload:", payload);
       
-      const response = await dispatch(signUp(payload));
-      console.log("Signup Response:", response); // For debugging
+      let response;
+      if (isRepresentative) {
+        response = await dispatch(SignUpRepresentative(payload));
+      } else {
+        response = await dispatch(signUp(payload));
+      }
       
-      // More lenient response checking
+      // console.log("Signup Response:", response);
+      
       if (response) {
         toast.success("Account created successfully!");
         dispatch(setUser(response));
@@ -157,17 +183,44 @@ export default function SignUp() {
           </div>
 
           <div>
-            <select
-              {...register("role", { required: "Role is required" })}
-              className="mt-1 block w-full h-12 px-4 rounded-lg border border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500"
-            >
-              <option value="Sales Representative">Sales Representative</option>
-              <option value="Admin">Admin</option>
-            </select>
+            <Controller
+              name="role"
+              control={control}
+              rules={{ required: "Role is required" }}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  options={roleOptions}
+                  placeholder="Select Role"
+                  className="mt-1"
+                />
+              )}
+            />
             {errors.role && (
               <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>
             )}
           </div>
+
+          {isRepresentative && (
+            <div>
+              <Controller
+                name="specialty"
+                control={control}
+                rules={{ required: "Specialty is required for representatives" }}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    options={specialtyOptions}
+                    placeholder="Select Specialty"
+                    className="mt-1"
+                  />
+                )}
+              />
+              {errors.specialty && (
+                <p className="mt-1 text-sm text-red-500">{errors.specialty.message}</p>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"

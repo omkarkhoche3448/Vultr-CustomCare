@@ -4,6 +4,7 @@ export const BASE_URL = typeof import.meta.env !== 'undefined' && import.meta.en
 export const endpoints = {
   // Auth endpoints
   SIGNUP_API: `${BASE_URL}/api/auth/signup`, // done
+  SIGNUP_REPRESENTATIVE_API: `${BASE_URL}/api/auth/signup-representative`, // done
   LOGIN_API: `${BASE_URL}/api/auth/login`, // done
 
   // Admin endpoints
