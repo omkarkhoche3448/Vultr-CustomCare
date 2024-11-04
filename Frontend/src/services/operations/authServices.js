@@ -3,7 +3,7 @@ import { setLoading, setUser, logout as logoutAction, setError } from "../../sli
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
 
-const { SIGNUP_API, LOGIN_API } = endpoints;
+const { SIGNUP_API, LOGIN_API,SIGNUP_REPRESENTATIVE_API } = endpoints;
 
 export function signUp(userData) {
   return async (dispatch) => {
@@ -23,6 +23,46 @@ export function signUp(userData) {
         error?.response?.data?.message || 
         error?.message || 
         "Failed to create account";
+      
+      dispatch(setError(errorMessage));
+      toast.error(errorMessage);
+      throw error;
+      
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+}
+
+export function SignUpRepresentative(userData) {
+  return async (dispatch) => {
+    const toastId = toast.loading("Creating representative account...");
+    dispatch(setLoading(true));
+    
+    try {
+      const representativeData = {
+        ...userData,
+        role: "Representative"
+      };
+      
+      const response = await apiConnector(
+        "POST", 
+        SIGNUP_REPRESENTATIVE_API, 
+        representativeData
+      );
+      
+      console.log("Representative Signup Response:", response);
+            
+      return response;
+
+    } catch (error) {
+      console.error("Representative Signup Error:", error);
+      
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Failed to create representative account";
       
       dispatch(setError(errorMessage));
       toast.error(errorMessage);

@@ -48,7 +48,12 @@ const login = async (req, res) => {
   // controllers/authController.js - During JWT generation in login function
   const token = jwt.sign({ email: user.email, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-  res.status(200).json({ message: 'Login successful', token });
+  res.status(200).json({ message: 'Login successful', token , user: { 
+    id: user.id,
+    username: user.name,
+    email: user.email,
+    role: user.role
+  } });
 };
 
 

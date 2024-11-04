@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');  
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const repRoutes = require('./routes/repRoutes');
@@ -9,6 +10,13 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  httpOnly: true,
+  credentials: true, 
+}));  
 
 // Routes
 app.use('/api/auth', authRoutes);

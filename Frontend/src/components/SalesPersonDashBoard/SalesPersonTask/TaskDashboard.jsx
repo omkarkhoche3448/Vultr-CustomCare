@@ -23,6 +23,7 @@ const TaskDashboard = () => {
   const dispatch = useDispatch();
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  const user = useSelector(state => state.auth.user);
   const tasks = useSelector(state => state.task.tasks);
   const loading = useSelector(state => state.task.loading);
   const error = useSelector(state => state.task.error);
@@ -35,27 +36,23 @@ const TaskDashboard = () => {
     setStatusFilter(e.target.value);
   };
 
-  // Filter tasks based on status
   const filteredTasks = Array.isArray(tasks) && statusFilter === 'ALL'
     ? tasks
-    : Array.isArray(tasks) 
-      ? tasks.filter(task => task.status === statusFilter) 
+    : Array.isArray(tasks)
+      ? tasks.filter(task => task.status === statusFilter)
       : [];
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className=" mx-auto">
-        {/* Header Section */}
+      <div className="mx-auto">
+        <DashboardHeader user={user} />
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
-           Tasks Dashboard
-          </h1>
-          
           <select 
             className="w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={statusFilter}
             onChange={handleStatusChange}
-          >
+          > 
             <option value="ALL">All Tasks</option>
             <option value="COMPLETED">Completed</option>
             <option value="PENDING">Pending</option>
@@ -63,21 +60,18 @@ const TaskDashboard = () => {
           </select>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500" />
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             {error}
           </div>
         )}
 
-        {/* Tasks Table */}
         {!loading && (
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
             <table className="w-full">
@@ -132,5 +126,23 @@ const TaskDashboard = () => {
     </div>
   );
 };
+
+const DashboardHeader = ({ user }) => (
+  <div className="mb-6 bg-white border border-gray-200 rounded-lg">
+    <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+          Task Dashboard Overview
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">Welcome back, {user?.username}</p>
+      </div>
+      <div className="mt-4 sm:mt-0 flex items-center space-x-4">
+        <div className="text-sm text-gray-600">
+          Last updated: {new Date().toLocaleDateString()}
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default TaskDashboard;
