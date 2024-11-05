@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Constants from your configuration
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const APP_ID = '0d93673aec684720b9126be9fbd575ae';
 const APP_CERTIFICATE = '33f9a027a70f48bab96ba233ea13781f';
 

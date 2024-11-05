@@ -11,8 +11,8 @@ const App = () => {
         {/* Sales Representative Dashboard */}
         <Route path="/dashboard" element={<VideoConference />} />
         
-        {/* Consumer Meeting View */}
-        <Route path="/join/:channelName/:token/:meetingId" element={<ConsumerView />} />
+        {/* Consumer Meeting View - Modified to handle long tokens */}
+        <Route path="/join/:channelName/:token/*" element={<ConsumerView />} />
         
         {/* Redirect root to dashboard */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
