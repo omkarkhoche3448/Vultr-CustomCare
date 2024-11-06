@@ -5,6 +5,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Alert, AlertDescription } from './Alert';
 import useTranscription from './useTranscription';
 import './ConsumerView.css';
+import { initSocket } from './socket';
 
   const ConsumerView = () => {
     const { channelName, token: encodedToken, meetingId } = useParams();
@@ -13,6 +14,35 @@ import './ConsumerView.css';
   
     // Decode the token at the start
     const token = decodeURIComponent(encodedToken);
+    const [socket, setSocket] = useState(null);
+  const [socketReady, setSocketReady] = useState(false);
+  const [transcriptions, setTranscriptions] = useState([]);
+    // ConsumerView.jsx - Consumer side
+    useEffect(() => {
+      if (!channelName) return;
+  
+      const newSocket = initSocket();
+      
+      newSocket.on('connect', () => {
+        console.log('[Consumer] Socket connected:', newSocket.id);
+        setSocketReady(true);
+        // Join the specific channel
+        newSocket.emit('join-channel', channelName);
+      });
+  
+      newSocket.on('disconnect', () => {
+        console.log('[Consumer] Socket disconnected');
+        setSocketReady(false);
+      });
+  
+      setSocket(newSocket);
+  
+      return () => {
+        if (newSocket) {
+          newSocket.disconnect();
+        }
+      };
+    }, [channelName]);
 
     const [localTracks, setLocalTracks] = useState([]);
     const [remoteUsers, setRemoteUsers] = useState({});
@@ -23,14 +53,34 @@ import './ConsumerView.css';
     const [hasPermissions, setHasPermissions] = useState(false);
     const [isJoining, setIsJoining] = useState(true);
     const [debugLog, setDebugLog] = useState([]);
-    const [transcriptions, setTranscriptions] = useState([]);
+    
     // Create refs for both the client and tracks to ensure persistence across renders
     const clientRef = useRef(null);
     const localTracksRef = useRef([]);
-    const handleTranscriptionUpdate = (transcription) => {
-      console.log('Consumer Transcription:', transcription);
-      setTranscriptions(prev => [...prev, transcription]);
-    };
+// ConsumerView.jsx - Consumer side
+const handleTranscriptionUpdate = (transcription) => {
+  const transcriptionData = {
+    text: transcription,
+    timestamp: new Date().toISOString(),
+    isHost: false,
+    channelName
+  };
+
+  console.log('[Consumer] Attempting to send transcription:', transcriptionData);
+
+  if (!socket || !socketReady || !channelName) {
+    console.warn('[Consumer] Cannot send transcription:', {
+      socketExists: !!socket,
+      socketReady,
+      channelName
+    });
+    return;
+  }
+
+  socket.emit('transcription', transcriptionData);
+  setTranscriptions(prev => [...prev, transcriptionData]);
+};
+
   
     // Initialize transcription hook
     const { transcriptionEnabled, startTranscription, stopTranscription } = 
@@ -42,36 +92,66 @@ import './ConsumerView.css';
       console.log(`[Consumer Debug] ${message}`);
       setDebugLog(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
     };
-
     const handleUserJoined = async (user, mediaType) => {
       addDebugLog(`Remote user ${user.uid} joined with ${mediaType}`);
       try {
-        // Always use clientRef.current instead of checking state
         if (!clientRef.current) {
           throw new Error('Client not initialized');
         }
-
+    
         await clientRef.current.subscribe(user, mediaType);
         addDebugLog(`Subscribed to ${mediaType} from user ${user.uid}`);
-
+    
         if (mediaType === 'video') {
           const remotePlayer = document.getElementById('remote-video-container');
           if (remotePlayer) {
-            user.videoTrack.play(remotePlayer);
-            addDebugLog(`Playing remote video from user ${user.uid}`);
+            // Clear existing content properly
+            while (remotePlayer.firstChild) {
+              remotePlayer.removeChild(remotePlayer.firstChild);
+            }
+    
+            const videoElement = document.createElement('div');
+            videoElement.style.width = '100%';
+            videoElement.style.height = '100%';
+            remotePlayer.appendChild(videoElement);
+    
+            // Add delay before playing
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            try {
+              await user.videoTrack.play(videoElement, {
+                fit: 'contain',
+                mirror: false
+              });
+              addDebugLog(`Playing remote video from user ${user.uid}`);
+            } catch (playError) {
+              if (playError.name === 'AbortError') {
+                addDebugLog('Play request aborted, retrying...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await user.videoTrack.play(videoElement, {
+                  fit: 'contain',
+                  mirror: false
+                });
+              } else {
+                throw playError;
+              }
+            }
           }
         }
-
+    
         if (mediaType === 'audio') {
-          user.audioTrack.play();
-          addDebugLog(`Playing remote audio from user ${user.uid}`);
+          try {
+            await user.audioTrack.play();
+            addDebugLog(`Playing remote audio from user ${user.uid}`);
+          } catch (audioError) {
+            addDebugLog(`Error playing audio: ${audioError.message}`);
+          }
         }
-
+    
         setRemoteUsers(prev => ({ ...prev, [user.uid]: user }));
       } catch (error) {
-        addDebugLog(`Error handling user joined: ${error.message}`);
+        addDebugLog(`Error in handleUserJoined: ${error.message}`);
         if (clientRef.current) {
-          // Retry subscription after a delay
           setTimeout(() => handleUserJoined(user, mediaType), 1000);
         }
       }
@@ -341,6 +421,18 @@ import './ConsumerView.css';
             ))}
           </div>
         )}
+        // ConsumerView.jsx - Add to your render method
+        <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        padding: '8px',
+        background: socketReady ? '#4CAF50' : '#f44336',
+        color: 'white',
+        borderRadius: '4px'
+      }}>
+        Socket Status: {socketReady ? 'Connected' : 'Disconnected'}
+      </div>
       </div>
     );
   };

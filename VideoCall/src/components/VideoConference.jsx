@@ -4,6 +4,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Alert, AlertDescription } from './Alert';
 import './VideoConference.css';
 import useTranscription from './useTranscription';
+import { initSocket } from './socket';
 
 const VideoConference = () => {
   const APP_ID = '37df06af651b4147bfb6ad522b350d13';
@@ -16,6 +17,7 @@ const VideoConference = () => {
     { name: "Alex Johnson", email: "alex.j@example.com" },
     { name: "Sarah Wilson", email: "sarah.w@example.com" }
   ];
+  const [socket, setSocket] = useState(null);
 
   const [showAlert, setShowAlert] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState('');
@@ -35,7 +37,30 @@ const VideoConference = () => {
   const [transcriptions, setTranscriptions] = useState([]);
   
   const clientRef = useRef(null);
+// VideoConference.jsx - Host side
+useEffect(() => {
+  const newSocket = initSocket();
+  setSocket(newSocket);
 
+  console.log('[Host] Socket initialized');
+
+  newSocket.on('transcription', (data) => {
+    console.log('[Host] Received transcription:', data);
+    if (data.channelName === activeCall?.channelName) {
+      console.log('[Host] Adding consumer transcription to state');
+      setTranscriptions(prev => [...prev, {
+        text: data.text,
+        timestamp: data.timestamp,
+        isHost: false
+      }]);
+    }
+  });
+
+  return () => {
+    console.log('[Host] Socket disconnecting');
+    newSocket.disconnect();
+  };
+}, []);
   const checkPermissions = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -49,10 +74,35 @@ const VideoConference = () => {
       return false;
     }
   };
-  const handleTranscriptionUpdate = (transcription) => {
-    setTranscriptions(prev => [...prev, transcription]);
-  };
+// VideoConference.jsx - Host side
+const handleTranscriptionUpdate = (transcription) => {
+  console.log('[Host] Sending transcription:', {
+    text: transcription,
+    timestamp: new Date().toISOString(),
+    isHost: true,
+    channelName: activeCall?.channelName
+  });
 
+  if (socket && activeCall) {
+    socket.emit('transcription', {
+      text: transcription,
+      timestamp: new Date().toISOString(),
+      isHost: true,
+      channelName: activeCall.channelName
+    });
+  } else {
+    console.warn('[Host] Socket or activeCall not available:', { socket: !!socket, activeCall });
+  }
+  
+  setTranscriptions(prev => [...prev, {
+    text: transcription,
+    timestamp: new Date().toISOString(),
+    isHost: true
+  }]);
+};
+  const handleTranscriptionReceived = (newTranscription) => {
+    setTranscriptions(prev => [...prev, newTranscription]);
+  };
   const { transcriptionEnabled, startTranscription, stopTranscription } = 
     useTranscription({ 
       isHost: true, 
@@ -200,37 +250,58 @@ const VideoConference = () => {
       
       await clientRef.current.subscribe(user, mediaType);
       addDebugLog(`Subscribed to ${mediaType} from user ${user.uid}`);
-
+  
       if (mediaType === 'video') {
         const remotePlayer = document.getElementById('remote-video-container');
         if (remotePlayer) {
-          remotePlayer.innerHTML = '';
+          // Clear previous video elements
+          while (remotePlayer.firstChild) {
+            remotePlayer.removeChild(remotePlayer.firstChild);
+          }
+          
           const videoElement = document.createElement('div');
           videoElement.style.width = '100%';
           videoElement.style.height = '100%';
           remotePlayer.appendChild(videoElement);
           
-          await user.videoTrack.play(videoElement, {
-            fit: 'contain',
-            mirror: false
-          });
-          addDebugLog(`Playing remote video from user ${user.uid}`);
+          // Add a small delay before playing
+          await new Promise(resolve => setTimeout(resolve, 100));
+          try {
+            await user.videoTrack.play(videoElement, {
+              fit: 'contain',
+              mirror: false
+            });
+            addDebugLog(`Playing remote video from user ${user.uid}`);
+          } catch (playError) {
+            if (playError.name === 'AbortError') {
+              addDebugLog('Play request aborted, retrying...');
+              await new Promise(resolve => setTimeout(resolve, 500));
+              await user.videoTrack.play(videoElement, {
+                fit: 'contain',
+                mirror: false
+              });
+            } else {
+              throw playError;
+            }
+          }
         }
       }
-
+  
       if (mediaType === 'audio') {
-        await user.audioTrack.play();
-        addDebugLog(`Playing remote audio from user ${user.uid}`);
+        try {
+          await user.audioTrack.play();
+          addDebugLog(`Playing remote audio from user ${user.uid}`);
+        } catch (audioError) {
+          addDebugLog(`Error playing audio: ${audioError.message}`);
+        }
       }
-
+  
       setRemoteUsers(prev => ({ ...prev, [user.uid]: user }));
     } catch (error) {
       addDebugLog(`Error handling user joined: ${error.message}`);
-      setTimeout(() => {
-        if (clientRef.current) {
-          handleUserJoined(user, mediaType);
-        }
-      }, 1000);
+      if (clientRef.current) {
+        setTimeout(() => handleUserJoined(user, mediaType), 1000);
+      }
     }
   };
 
@@ -385,13 +456,20 @@ const VideoConference = () => {
         </button>
       </div>
       <div className="transcription-messages">
-        {transcriptions.map((t, i) => (
-          <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
-            <span className="timestamp">{new Date(t.timestamp).toLocaleTimeString()}</span>
-            <span className="speaker">{t.isHost ? 'Rep' : 'Consumer'}:</span>
-            <span className="text">{t.text}</span>
-          </div>
-        ))}
+        {transcriptions.map((t, i) => {
+          console.log('[TranscriptionPanel] Rendering message:', t);
+          return (
+            <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
+              <span className="timestamp">
+                {new Date(t.timestamp).toLocaleTimeString()}
+              </span>
+              <span className="speaker">{t.isHost ? 'Rep' : 'Consumer'}</span>
+              <span className="text">
+                {typeof t.text === 'object' ? t.text.text : t.text}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
