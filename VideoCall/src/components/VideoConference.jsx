@@ -4,7 +4,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Alert, AlertDescription } from './Alert';
 import './VideoConference.css';
 import useTranscription from './useTranscription';
-import { initSocket } from './socket';
+
 
 const VideoConference = () => {
   const APP_ID = '37df06af651b4147bfb6ad522b350d13';
@@ -17,7 +17,6 @@ const VideoConference = () => {
     { name: "Alex Johnson", email: "alex.j@example.com" },
     { name: "Sarah Wilson", email: "sarah.w@example.com" }
   ];
-  const [socket, setSocket] = useState(null);
 
   const [showAlert, setShowAlert] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState('');
@@ -35,32 +34,75 @@ const VideoConference = () => {
   const [hasPermissions, setHasPermissions] = useState(false);
   const [debugLog, setDebugLog] = useState([]);
   const [transcriptions, setTranscriptions] = useState([]);
-  
+  const [meetingidd,setMeetingidd]=useState(null);
+
   const clientRef = useRef(null);
-// VideoConference.jsx - Host side
-useEffect(() => {
-  const newSocket = initSocket();
-  setSocket(newSocket);
-
-  console.log('[Host] Socket initialized');
-
-  newSocket.on('transcription', (data) => {
-    console.log('[Host] Received transcription:', data);
-    if (data.channelName === activeCall?.channelName) {
-      console.log('[Host] Adding consumer transcription to state');
-      setTranscriptions(prev => [...prev, {
-        text: data.text,
-        timestamp: data.timestamp,
-        isHost: false
-      }]);
+  const updateTranscription = async (transcription) => {
+    if (activeCall && activeCall.meetingId) {
+      try {
+        await axios.post('http://localhost:5000/api/transcription', {
+          meetingId: meetingidd,
+          transcription: {
+            timestamp: transcription.timestamp,
+            text: transcription.text,
+            speaker: transcription.isHost ? 'Representative' : 'Customer',
+          },
+        });
+      } catch (error) {
+        console.error("Failed to update transcription:", error);
+      }
     }
-  });
-
-  return () => {
-    console.log('[Host] Socket disconnecting');
-    newSocket.disconnect();
   };
-}, []);
+  // In VideoConference.jsx, update the useTranscription hook implementation:
+
+const { transcriptionEnabled, startTranscription, stopTranscription } = useTranscription({
+  isHost: true,
+  onTranscriptionUpdate: async (transcription) => {
+    try {
+      // Extract text from transcription object
+      const text = transcription?.text?.text || transcription?.text || '';
+      
+      // Format the transcription data
+      const transcriptionData = {
+        meetingId: activeCall?.meetingId,
+        transcription: {
+          text: text,
+          timestamp: new Date().toISOString(),
+          speaker: 'representative' // or 'host'
+        }
+      };
+
+      console.log('[Representative] Sending transcription:', transcriptionData);
+
+      // Send to backend API
+      const response = await fetch('http://localhost:5000/api/transcription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transcriptionData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update local state
+      setTranscriptions(prev => [...prev, {
+        text: text,
+        timestamp: transcriptionData.transcription.timestamp,
+        isHost: true,
+        channelName: activeCall?.channelName
+      }]);
+
+      console.log('[Representative] Transcription sent successfully');
+
+    } catch (error) {
+      console.error('Error saving transcription:', error);
+    }
+  },
+});
+
   const checkPermissions = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -74,40 +116,54 @@ useEffect(() => {
       return false;
     }
   };
-// VideoConference.jsx - Host side
-const handleTranscriptionUpdate = (transcription) => {
-  console.log('[Host] Sending transcription:', {
-    text: transcription,
-    timestamp: new Date().toISOString(),
-    isHost: true,
-    channelName: activeCall?.channelName
-  });
 
-  if (socket && activeCall) {
-    socket.emit('transcription', {
-      text: transcription,
-      timestamp: new Date().toISOString(),
-      isHost: true,
-      channelName: activeCall.channelName
-    });
-  } else {
-    console.warn('[Host] Socket or activeCall not available:', { socket: !!socket, activeCall });
-  }
-  
-  setTranscriptions(prev => [...prev, {
-    text: transcription,
-    timestamp: new Date().toISOString(),
-    isHost: true
-  }]);
-};
-  const handleTranscriptionReceived = (newTranscription) => {
-    setTranscriptions(prev => [...prev, newTranscription]);
-  };
-  const { transcriptionEnabled, startTranscription, stopTranscription } = 
-    useTranscription({ 
-      isHost: true, 
-      onTranscriptionUpdate: handleTranscriptionUpdate 
-    });
+  useEffect(() => {
+    const initializeAgoraClient = async () => {
+      try {
+        const permitted = await checkPermissions();
+        if (!permitted) return;
+
+        const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        clientRef.current = agoraClient;
+        
+        agoraClient.on('connection-state-change', (curState, prevState) => {
+          setConnectionState(curState);
+          addDebugLog(`Connection state changed from ${prevState} to ${curState}`);
+          
+          if (curState === 'DISCONNECTED') {
+            setError('Connection lost. Please try rejoining the call.');
+            leaveChannel();
+          }
+        });
+
+        agoraClient.on('error', (err) => {
+          console.error('Agora client error:', err);
+          setError(`Connection error: ${err.message}`);
+        });
+
+        agoraClient.on('user-published', handleUserJoined);
+        agoraClient.on('user-left', handleUserLeft);
+        
+        setClient(agoraClient);
+        addDebugLog('Agora client initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize:', error);
+        setError('Failed to initialize video conference system');
+        addDebugLog(`Initialization error: ${error.message}`);
+      }
+    };
+
+    initializeAgoraClient();
+
+    return () => {
+      if (clientRef.current) {
+        leaveChannel();
+        clientRef.current.removeAllListeners();
+        clientRef.current = null;
+      }
+    };
+  }, []);
+
   const joinChannel = async (channelName, token) => {
     try {
       addDebugLog('Starting join channel process...');
@@ -165,6 +221,7 @@ const handleTranscriptionUpdate = (transcription) => {
 
       setConnectionState('CONNECTED');
       setError(null);
+      startTranscription();
 
       return { audioTrack, videoTrack };
     } catch (error) {
@@ -189,57 +246,11 @@ const handleTranscriptionUpdate = (transcription) => {
       setLocalTracks([]);
       setRemoteUsers({});
       setActiveCall(null);
+      stopTranscription();
     } catch (error) {
       console.error('Error leaving channel:', error);
     }
   };
-
-  useEffect(() => {
-    const initializeAgoraClient = async () => {
-      try {
-        const permitted = await checkPermissions();
-        if (!permitted) return;
-
-        const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-        clientRef.current = agoraClient;
-        
-        agoraClient.on('connection-state-change', (curState, prevState) => {
-          setConnectionState(curState);
-          addDebugLog(`Connection state changed from ${prevState} to ${curState}`);
-          
-          if (curState === 'DISCONNECTED') {
-            setError('Connection lost. Please try rejoining the call.');
-            leaveChannel();
-          }
-        });
-
-        agoraClient.on('error', (err) => {
-          console.error('Agora client error:', err);
-          setError(`Connection error: ${err.message}`);
-        });
-
-        agoraClient.on('user-published', handleUserJoined);
-        agoraClient.on('user-left', handleUserLeft);
-        
-        setClient(agoraClient);
-        addDebugLog('Agora client initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize:', error);
-        setError('Failed to initialize video conference system');
-        addDebugLog(`Initialization error: ${error.message}`);
-      }
-    };
-
-    initializeAgoraClient();
-
-    return () => {
-      if (clientRef.current) {
-        leaveChannel();
-        clientRef.current.removeAllListeners();
-        clientRef.current = null;
-      }
-    };
-  }, []);
 
   const handleUserJoined = async (user, mediaType) => {
     addDebugLog(`Remote user ${user.uid} joined with ${mediaType}`);
@@ -387,9 +398,10 @@ const handleTranscriptionUpdate = (transcription) => {
       const channelName = `${CHANNEL_PREFIX}${Date.now()}`;
       const token = await generateAgoraToken(channelName);
       const meetingId = Math.random().toString(36).substring(7);
-      
+      setMeetingidd(meetingId);
       const encodedToken = encodeURIComponent(token);
-      const fullUrl = `${window.location.origin}/join/${channelName}/${encodedToken}`;
+      // Add meetingId to the URL
+      const fullUrl = `${window.location.origin}/join/${channelName}/${encodedToken}/${meetingId}`;
       
       setSelectedEmail(email);
       setMeetingLink(fullUrl);
@@ -445,34 +457,30 @@ const handleTranscriptionUpdate = (transcription) => {
       setError('Failed to toggle camera');
     }
   };
+
   const TranscriptionPanel = () => (
     <div className="transcription-panel">
-      <div className="transcription-controls">
-        <button
-          onClick={transcriptionEnabled ? stopTranscription : startTranscription}
-          className={`control-button ${transcriptionEnabled ? 'active' : ''}`}
-        >
-          {transcriptionEnabled ? 'Stop Transcription' : 'Start Transcription'}
-        </button>
-      </div>
+      <h3>Live Transcription</h3>
       <div className="transcription-messages">
-        {transcriptions.map((t, i) => {
-          console.log('[TranscriptionPanel] Rendering message:', t);
-          return (
-            <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
+        {transcriptions.map((t, i) => (
+          <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
+            <div className="message-header">
               <span className="timestamp">
                 {new Date(t.timestamp).toLocaleTimeString()}
               </span>
-              <span className="speaker">{t.isHost ? 'Rep' : 'Consumer'}</span>
-              <span className="text">
-                {typeof t.text === 'object' ? t.text.text : t.text}
+              <span className="speaker">
+                {t.isHost ? 'Representative' : 'Consumer'}
               </span>
             </div>
-          );
-        })}
+            <div className="message-content">
+              {typeof t.text === 'object' ? t.text.text : t.text}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
+
   return (
     <div className="video-conference">
       {/* Left Column - Consumers List */}
@@ -489,107 +497,108 @@ const handleTranscriptionUpdate = (transcription) => {
                 className="invite-button"
               >
                 {cooldowns[consumer.email] > 0 ? (
-                  <>
-                    <Timer size={16} />
-                    {cooldowns[consumer.email]}s
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />
-                    {activeCall ? 'In Call' : 'Invite'}
-                  </>
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+  <>
+    <Timer size={16} />
+    {cooldowns[consumer.email]}s
+  </>
+) : (
+  <>
+    <Send size={16} />
+    {activeCall ? 'In Call' : 'Invite'}
+  </>
+)}
+</button>
+</div>
+))}
+</div>
+</div>
 
-      {/* Middle Column - Videos and Controls */}
-      <div className="videos-section">
-        <div className="videos-container">
-          <div className="video-frame">
-            <div id="local-video-container">
-              {!localTracks.length && 'Your Video'}
-            </div>
-          </div>
-          
-          <div className="video-frame">
-            <div id="remote-video-container">
-              {Object.keys(remoteUsers).length === 0 && 'Consumer Video'}
-            </div>
-          </div>
-          
-          <div className="controls-container">
-            <button
-              onClick={toggleCamera}
-              disabled={!localTracks.length}
-              className={`control-button camera ${!isCameraOn ? 'off' : ''}`}
-            >
-              <Camera size={24} />
-            </button>
-            <button
-              onClick={toggleMic}
-              disabled={!localTracks.length}
-              className={`control-button mic ${!isMicOn ? 'off' : ''}`}
-            >
-              <Mic size={24} />
-            </button>
-            <button
-              onClick={leaveChannel}
-              disabled={!activeCall}
-              className="control-button end-call"
-            >
-              <PhoneOff size={24} />
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* Meeting Link Alert Modal */}
-      {showAlert && (
-        <div className="meeting-link-modal">
-          <div className="modal-header">
-            <h3 className="modal-title">Meeting Link</h3>
-            <button 
-              onClick={() => setShowAlert(false)}
-              className="close-button"
-            >
-              ×
-            </button>
-          </div>
-          <p>Meeting link generated for {selectedEmail}:</p>
-          <div className="meeting-link-box">
-            {meetingLink}
-          </div>
-          <button
-            onClick={() => copyToClipboard(meetingLink)}
-            className="copy-button"
-          >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
-        </div>
-      )}
-
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Debug Log */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="debug-log">
-          {debugLog.map((log, i) => (
-            <div key={i}>{log}</div>
-          ))}
-        </div>
-      )}
-      <TranscriptionPanel />
+{/* Middle Column - Videos and Controls */}
+<div className="videos-section">
+<div className="videos-container">
+  <div className="video-frame">
+    <div id="local-video-container">
+      {!localTracks.length && 'Your Video'}
     </div>
-    
-  );
+  </div>
+  
+  <div className="video-frame">
+    <div id="remote-video-container">
+      {Object.keys(remoteUsers).length === 0 && 'Consumer Video'}
+    </div>
+  </div>
+  
+  <div className="controls-container">
+    <button
+      onClick={toggleCamera}
+      disabled={!localTracks.length}
+      className={`control-button camera ${!isCameraOn ? 'off' : ''}`}
+    >
+      <Camera size={24} />
+    </button>
+    <button
+      onClick={toggleMic}
+      disabled={!localTracks.length}
+      className={`control-button mic ${!isMicOn ? 'off' : ''}`}
+    >
+      <Mic size={24} />
+    </button>
+    <button
+      onClick={leaveChannel}
+      disabled={!activeCall}
+      className="control-button end-call"
+    >
+      <PhoneOff size={24} />
+    </button>
+  </div>
+</div>
+</div>
+
+{/* Meeting Link Alert Modal */}
+{showAlert && (
+<div className="meeting-link-modal">
+  <div className="modal-header">
+    <h3 className="modal-title">Meeting Link</h3>
+    <button 
+      onClick={() => setShowAlert(false)}
+      className="close-button"
+    >
+      ×
+    </button>
+  </div>
+  <p>Meeting link generated for {selectedEmail}:</p>
+  <div className="meeting-link-box">
+    {meetingLink}
+  </div>
+  <button
+    onClick={() => copyToClipboard(meetingLink)}
+    className="copy-button"
+  >
+    {copied ? <Check size={16} /> : <Copy size={16} />}
+    {copied ? 'Copied!' : 'Copy Link'}
+  </button>
+</div>
+)}
+
+{/* Error Alert */}
+{error && (
+<Alert variant="destructive">
+  <AlertDescription>{error}</AlertDescription>
+</Alert>
+)}
+
+{/* Debug Log */}
+{process.env.NODE_ENV === 'development' && (
+<div className="debug-log">
+  {debugLog.map((log, i) => (
+    <div key={i}>{log}</div>
+  ))}
+</div>
+)}
+
+<TranscriptionPanel />
+</div>
+);
 };
 
 export default VideoConference;

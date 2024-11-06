@@ -13,7 +13,11 @@ const App = () => {
         <Route path="/dashboard" element={<VideoConference />} />
         
         {/* Consumer Meeting View - Modified to handle long tokens */}
-        <Route path="/join/:channelName/:token/*" element={<ConsumerView />} />
+        // App.jsx
+
+  {/* Update the join route to include meetingId */}
+  <Route path="/join/:channelName/:token/:meetingId" element={<ConsumerView />} />
+
         
         {/* Redirect root to dashboard */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
