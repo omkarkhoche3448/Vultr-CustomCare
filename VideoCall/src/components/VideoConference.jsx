@@ -34,7 +34,7 @@ const VideoConference = () => {
   const [hasPermissions, setHasPermissions] = useState(false);
   const [debugLog, setDebugLog] = useState([]);
   const [transcriptions, setTranscriptions] = useState([]);
-  const [meetingidd,setMeetingidd]=useState(null);
+  const [meetingidd,setMeetingidd]=useState(Math.random().toString(36).substring(7));
 
   const clientRef = useRef(null);
   const updateTranscription = async (transcription) => {
