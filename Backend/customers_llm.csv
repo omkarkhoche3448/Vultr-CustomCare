@@ -1,0 +1,6 @@
+id,name,productDemand,category,email
+cust_101,Elon Musk,LLM Training on Multiple Servers,LLM, elon.musk@spacex.com
+cust_102,Mark Zuckerberg,Large-Scale LLM for Meta AI Research,LLM, mark.zuckerberg@meta.com
+cust_103,Sundar Pichai,AI Language Model for Google Search,LLM, sundar.pichai@google.com
+cust_104,Satya Nadella,Microsoft AI LLM Training Cluster,LLM, satya.nadella@microsoft.com
+cust_105,Jeff Bezos,LLM Model for NLP Research,LLM, jeff.bezos@amazon.com

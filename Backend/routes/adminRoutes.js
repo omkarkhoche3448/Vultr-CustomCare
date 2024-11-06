@@ -8,7 +8,7 @@ vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
 
 
 // Route to create a new task
-router.post('/create-task', authenticate, authorizeAdmin, adminController.createTask);
+// router.post('/create-task', authenticate, authorizeAdmin, adminController.createTask);
 
 // Route to assign a task to a representative
 router.post('/assign-task', authenticate, authorizeAdmin, adminController.assignTask);

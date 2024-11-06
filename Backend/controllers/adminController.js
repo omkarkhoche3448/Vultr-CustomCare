@@ -10,21 +10,66 @@ vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
 
 const axios = require('axios');
 
-const createTask = async (req, res) => {
-  const { customerName, projectTitle, description, script, keywords } = req.body;
+// const createTask = async (req, res) => {
+//   const { customerName, projectTitle, description, script, keywords } = req.body;
   
-  if (!customerName || !projectTitle || !description || !script) {
-    return res.status(400).json({ message: 'All fields are required' });
+//   if (!customerName || !projectTitle || !description || !script) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   const taskId = uuidv4();
+//   const taskData = {
+//     taskId,
+//     customerName,
+//     projectTitle,
+//     description,
+//     script,
+//     keywords,
+//   };
+
+//   const params = {
+//     Bucket: task_bucket,
+//     Key: `tasks/${taskId}.json`,
+//     Body: JSON.stringify(taskData),
+//     ContentType: 'application/json',
+//   };
+
+//   try {
+//     await vultrConfig.upload(params).promise();
+//     res.status(201).json({ message: 'Task created successfully', taskId });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Failed to create task' });
+//   }
+// };
+
+
+const assignTask = async (req, res) => {
+  const { 
+    category,
+    customerNames,
+    title,
+    description,
+    script,
+    keywords,
+    teamMembers 
+  } = req.body;
+  
+  if (!category || !customerNames || !title || !description || !script || !teamMembers) {
+    return res.status(400).json({ message: 'All required fields must be provided' });
   }
 
   const taskId = uuidv4();
   const taskData = {
     taskId,
-    customerName,
-    projectTitle,
+    category,
+    customerNames: Array.isArray(customerNames) ? customerNames : [customerNames],
+    title,
     description,
     script,
     keywords,
+    teamMembers: Array.isArray(teamMembers) ? teamMembers : [teamMembers],
+    createdAt: new Date().toISOString()
   };
 
   const params = {
@@ -36,42 +81,10 @@ const createTask = async (req, res) => {
 
   try {
     await vultrConfig.upload(params).promise();
-    res.status(201).json({ message: 'Task created successfully', taskId });
+    res.status(201).json({ message: 'Task created and assigned successfully', taskId });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create task' });
-  }
-};
-
-const assignTask = async (req, res) => {
-  const { taskId, representativeName } = req.body;
-
-  if (!taskId || !representativeName) {
-    return res.status(400).json({ message: 'Task ID and representative name are required' });
-  }
-
-  const params = {
-    Bucket: task_bucket,
-    Key: `tasks/${taskId}.json`,
-  };
-
-  try {
-    const task = await vultrConfig.getObject(params).promise();
-    const taskData = JSON.parse(task.Body.toString());
-
-    taskData.assignedTo = representativeName;
-
-    await vultrConfig
-      .putObject({
-        ...params,
-        Body: JSON.stringify(taskData),
-      })
-      .promise();
-
-    res.status(200).json({ message: 'Task assigned successfully', taskId, representativeName });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to assign task' });
+    res.status(500).json({ message: 'Failed to create and assign task' });
   }
 };
 
@@ -192,13 +205,26 @@ const getCustomerData = async (req, res) => {
     const csvData = [];
 
     const readable = new stream.Readable();
-    readable._read = () => {}; // No-op for _read
+    readable._read = () => {};
     readable.push(csvFile.Body);
     readable.push(null);
 
     readable
-      .pipe(csv())
-      .on('data', (row) => csvData.push(row))
+      .pipe(csv({
+        mapValues: ({ header, value }) => value.trim()
+      }))
+      .on('data', (row) => {
+        // Validate required fields
+        if (row.id && row.name && row.productDemand && row.category && row.email) {
+          csvData.push({
+            // id: row.id,
+            name: row.name,
+            productDemand: row.productDemand,
+            // category: row.category,
+            email: row.email
+          });
+        }
+      })
       .on('end', () => res.status(200).json(csvData))
       .on('error', (error) => {
         console.error(error);
@@ -319,7 +345,6 @@ const generate_keywords = async (req, res) => {
 };
 
 module.exports = {
-  createTask,
   assignTask,
   getRepresentatives,
   fetchTasks,

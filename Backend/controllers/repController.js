@@ -5,7 +5,7 @@ user_bucket = process.env.USER_BUCKET;
 csv_bucket = process.env.CSV_BUCKET;
 
 const getAssignedTasks = async (req, res) => {
-    const representativeName = req.user.name;  // Assumes the JWT payload includes the name of the representative
+    const representativeName = req.user.name;
 
     const params = {
         Bucket: task_bucket,
@@ -13,31 +13,42 @@ const getAssignedTasks = async (req, res) => {
     };
 
     try {
-        // Retrieve the list of all tasks in the 'task-data-bucket'
         const taskList = await vultrConfig.listObjectsV2(params).promise();
-
         const tasks = await Promise.all(
             taskList.Contents.map(async (file) => {
-                const task = await vultrConfig.getObject({ Bucket: params.Bucket, Key: file.Key }).promise();
+                const task = await vultrConfig.getObject({ 
+                    Bucket: params.Bucket, 
+                    Key: file.Key 
+                }).promise();
                 const taskData = JSON.parse(task.Body.toString());
 
-                // Filter tasks assigned to the current representative
-                if (taskData.assignedTo === representativeName) {
+                // Check if the representative exists in teamMembers array
+                const isAssigned = taskData.teamMembers?.some(
+                    member => member.name === representativeName
+                );
+
+                if (isAssigned) {
                     return {
                         taskId: taskData.taskId,
-                        customerName: taskData.customerName,
-                        projectTitle: taskData.projectTitle,
+                        customerNames: taskData.customerNames,
+                        title: taskData.title,
                         description: taskData.description,
                         script: taskData.script,
                         keywords: taskData.keywords,
+                        category: taskData.category,
+                        createdAt: taskData.createdAt
                     };
                 }
                 return null;
             })
         );
 
-        // Filter out null values from tasks array
         const assignedTasks = tasks.filter(task => task !== null);
+        
+        // Add debug logging
+        console.log('Representative Name:', representativeName);
+        console.log('Found Tasks:', assignedTasks.length);
+        
         res.status(200).json(assignedTasks);
     } catch (error) {
         console.error('Error fetching assigned tasks:', error);
