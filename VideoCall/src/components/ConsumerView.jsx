@@ -1,10 +1,10 @@
-  import React, { useState, useEffect } from 'react';
-  import { useRef } from 'react';
-  import { useParams, useNavigate } from 'react-router-dom';
-  import { Camera, Mic, PhoneOff } from 'lucide-react';
-  import AgoraRTC from 'agora-rtc-sdk-ng';
-  import { Alert, AlertDescription } from './Alert';
-  import './ConsumerView.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Camera, Mic, PhoneOff } from 'lucide-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
+import { Alert, AlertDescription } from './Alert';
+import useTranscription from './useTranscription';
+import './ConsumerView.css';
 
   const ConsumerView = () => {
     const { channelName, token: encodedToken, meetingId } = useParams();
@@ -23,11 +23,21 @@
     const [hasPermissions, setHasPermissions] = useState(false);
     const [isJoining, setIsJoining] = useState(true);
     const [debugLog, setDebugLog] = useState([]);
-    
+    const [transcriptions, setTranscriptions] = useState([]);
     // Create refs for both the client and tracks to ensure persistence across renders
     const clientRef = useRef(null);
     const localTracksRef = useRef([]);
-
+    const handleTranscriptionUpdate = (transcription) => {
+      console.log('Consumer Transcription:', transcription);
+      setTranscriptions(prev => [...prev, transcription]);
+    };
+  
+    // Initialize transcription hook
+    const { transcriptionEnabled, startTranscription, stopTranscription } = 
+      useTranscription({ 
+        isHost: false, 
+        onTranscriptionUpdate: handleTranscriptionUpdate 
+      });
     const addDebugLog = (message) => {
       console.log(`[Consumer Debug] ${message}`);
       setDebugLog(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
@@ -95,6 +105,9 @@
         const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
         localTracksRef.current = [audioTrack, videoTrack];
         setLocalTracks([audioTrack, videoTrack]);
+        
+        // Start transcription after tracks are created
+        startTranscription();
         addDebugLog('Local tracks created');
 
         const localPlayer = document.getElementById('local-video-container');
@@ -158,6 +171,7 @@
               
               if (curState === 'DISCONNECTED') {
                 setError('Connection lost. Please try rejoining the meeting.');
+                stopTranscription();
                 leaveAndRemoveLocalStream();
               }
             });
@@ -190,6 +204,7 @@
 
     const leaveAndRemoveLocalStream = async () => {
       try {
+        stopTranscription();
         // Use localTracksRef instead of state
         if (localTracksRef.current.length > 0) {
           localTracksRef.current.forEach(track => {
