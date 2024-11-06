@@ -66,7 +66,6 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
     currentPage * itemsPerPage
   );
 
-  //   Edit form
   const skillsetOptions = [
     { value: "Customer Support", label: "Customer Support" },
     { value: "Technical Support", label: "Technical Support" },
@@ -74,9 +73,8 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
   ];
 
   const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "away", label: "Away" },
-    { value: "offline", label: "Offline" },
+    { value: "available", label: "Available" },
+    { value: "unavailable", label: "Unavailable" },
   ];
 
   const handleEdit = (e) => {
@@ -99,11 +97,11 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
   };
 
   const handleDelete = () => {
-    setRepresentatives(
-      representatives.filter(
-        (rep) => rep.email !== selectedRepresentative.email
-      )
-    );
+    // setRepresentatives(
+    //   representatives.filter(
+    //     (rep) => rep.email !== selectedRepresentative.email
+    //   )
+    // );
     setIsModalOpen(false);
   };
 
@@ -141,7 +139,7 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
       {showFilterDropdown && (
         <div className="absolute top-full mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-1">
-            {["all", "active", "away", "offline"].map((status) => (
+            {["all","available","unavailable"].map((status) => (
               <button
                 key={status}
                 onClick={() => {
@@ -173,7 +171,7 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
       </button>
 
       {showDropdown === index && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+        <div className="absolute right-5  w-fit top-2  rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
           <div className="py-1">
             <button
               onClick={() => {
@@ -273,7 +271,7 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        rep.skillset === "Customer Support"
+                        rep.skillset === rep.skillset
                           ? "bg-emerald-100 text-emerald-800"
                           : "bg-blue-100 text-blue-800"
                       }`}
@@ -284,9 +282,9 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        rep.status.toLowerCase() === "active"
+                        rep.status === "Available"
                           ? "bg-green-100 text-green-800"
-                          : rep.status.toLowerCase() === "away"
+                          : rep.status === "Unavailable"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-gray-100 text-gray-800"
                       }`}

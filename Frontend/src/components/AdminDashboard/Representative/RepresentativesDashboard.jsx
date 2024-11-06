@@ -1,34 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Modal from "../Modal";
 import RepresentativeTable from "./RepresentativeTable";
-import SearchBar from "../SearchBar";
 import CreateRepresentativeForm from "./CreateRepresentativeForm";
 import StatsGrid from "./StatsGrid";
+import { fetchRepresentatives } from "../../../services/operations/adminServices";
+import {
+  setLoading,
+  setRepresentatives,
+  setError,
+} from "../../../slices/representativesSlice";
 
 const RepresentativesDashboard = () => {
-  const [representatives, setRepresentatives] = useState([
-    {
-      name: "Rep 1",
-      email: "rep1@example.com",
-      skillset: "Customer Support",
-      status: "Active",
-    },
-    {
-      name: "Rep 2",
-      email: "rep2@example.com",
-      skillset: "Technical Support",
-      status: "Active",
-    },
-  ]);
-
+  const dispatch = useDispatch();
+  const { representatives, loading, error } = useSelector(
+    (state) => state.representatives
+  );
+  const { token } = useSelector((state) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     skillset: "Customer Support",
-    status: "Active",
+    status: "Available",
   });
+  useEffect(() => {
+    const loadRepresentatives = async () => {
+      if (representatives.length === 0) {
+        try {
+          dispatch(setLoading(true)); 
+
+          const storedRepresentatives = JSON.parse(
+            localStorage.getItem("representatives")
+          );
+
+          if (storedRepresentatives && storedRepresentatives.length > 0) {
+        
+            dispatch(setRepresentatives(storedRepresentatives));
+          } else {
+           
+            const reps = await fetchRepresentatives(token);
+            dispatch(setRepresentatives(reps)); 
+            localStorage.setItem("representatives", JSON.stringify(reps));
+          }
+        } catch (err) {
+          dispatch(setError("Failed to fetch representatives"));
+        } finally {
+          dispatch(setLoading(false)); 
+        }
+      }
+    };
+
+    loadRepresentatives(); 
+  }, [token, dispatch, representatives.length]); 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,19 +64,19 @@ const RepresentativesDashboard = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setRepresentatives((prev) => [...prev, formData]);
+    dispatch(setRepresentatives([...representatives, formData]));
     setFormData({
       name: "",
       email: "",
       skillset: "Customer Support",
-      status: "Active",
+      status: "Available",
     });
     setIsModalOpen(false);
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className=" mx-auto space-y-8">
+      <div className="mx-auto space-y-8">
         {/* Header Section */}
         <div className="flex justify-between items-center">
           <div>
@@ -79,9 +103,7 @@ const RepresentativesDashboard = () => {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="hidden sm:inline">
-               Representative Credentials
-            </span>
+            <span className="hidden sm:inline">Representative Credentials</span>
             <span className="inline sm:hidden">Credentials</span>
           </button>
         </div>
