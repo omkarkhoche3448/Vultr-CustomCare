@@ -52,49 +52,49 @@ export const fetchRepresentatives = async (token) => {
   console.log("Fetching representatives...");
   const toastId = toast.loading("Fetching representatives...");
   try {
-    
     const response = await axios.get(GET_REPRESENTATIVES_API, {
       headers: {
-        Authorization: `Bearer ${token}`, 
+        Authorization: `Bearer ${token}`,
       },
     });
 
     toast.success("Representatives fetched successfully!", { id: toastId });
     console.log("Representatives fetched:", response.data);
     window.location.reload();
-    return response.data; 
+    return response.data;
   } catch (error) {
-    
     toast.error("Error fetching representatives", { id: toastId });
     console.error("Error fetching representatives:", error);
-    throw error; 
+    throw error;
   }
 };
 
 // Service to fetch customers
-export const fetchCustomers = (token, filename = 'customers.csv') => async (dispatch) => {
-  console.log("Fetching customers...");
-  const toastId = toast.loading("Fetching customers...");
+export const fetchCustomers =
+  (token, filename = "customers.csv") =>
+  async (dispatch) => {
+    console.log("Fetching customers...");
+    const toastId = toast.loading("Fetching customers...");
 
-  try {
-    const response = await axios.get(GET_CUSTOMERS_API, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: {
-        filename,
-      },
-    });
+    try {
+      const response = await axios.get(GET_CUSTOMERS_API, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          filename,
+        },
+      });
 
-    dispatch(setCustomers(response.data.data)); 
-    toast.success("Customer fetched successfully!", { id: toastId });
-    console.log("Customers fetched:", response.data.data);
-    return response.data; 
-  } catch (error) {
-    toast.error("Error fetching Customers", { id: toastId });
-    console.error("Error fetching Customers:", error);
-  }
-};
+      dispatch(setCustomers(response.data.data));
+      toast.success("Customer fetched successfully!", { id: toastId });
+      console.log("Customers fetched:", response.data.data);
+      return response.data;
+    } catch (error) {
+      toast.error("Error fetching Customers", { id: toastId });
+      console.error("Error fetching Customers:", error);
+    }
+  };
 
 // Service to upload a CSV file
 export const uploadCSV = async (csvFile, token, onProgress) => {
@@ -108,7 +108,7 @@ export const uploadCSV = async (csvFile, token, onProgress) => {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
-      onUploadProgress: onProgress, 
+      onUploadProgress: onProgress,
     });
 
     toast.success("CSV uploaded successfully!", { id: toastId });
@@ -234,35 +234,24 @@ export const fetchDeadlines = async () => {
   });
 };
 
-export const generateScript = async (description, task, token) => {
-  console.log("Generating script with:", { description, task });
-
+export const generateScript = async (description, task, GenaiToken) => {
+  console.log("Generating scriptS....");
   try {
-    // Simulating the API call (commented out actual API call for this example)
-    // const response = await axios.post(
-    //   `http://localhost:3000/api/admin/generate-script`,
-    //   {
-    //     description,
-    //     task,
-    //   },
-    //   {
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       'Authorization': `Bearer ${token}`
-    //     },
-    //   }
-    // );
-
-    const response = {
-      data: {
-        script: `
-          "Welcome to the Smart Home Assistant. This is your go-to device for controlling home appliances using voice commands. 
-          With compatibility for Alexa, Google Home, and Apple HomeKit, it seamlessly integrates into your smart home system. 
-          Imagine walking into your home, and with a simple voice command, the lights turn on, the thermostat adjusts to your preferred temperature, 
-          and your favorite playlist starts playing. Plus, the Smart Home Assistant learns from your habits to optimize energy usage and ensure maximum comfort."
-        `,
+    const response = await axios.post(
+      `http://localhost:3000/api/admin/generate-script`,
+      {
+        description,
+        task,
       },
-    };
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${GenaiToken}`,
+        },
+      }
+    );
+
+    // return "This is a dummy generated script based on provided description and task.";
 
     if (response.data && response.data.script) {
       console.log("Script generated successfully.");
@@ -273,38 +262,38 @@ export const generateScript = async (description, task, token) => {
   } catch (error) {
     console.error("Script generation error:", error);
     if (error.response) {
-      // The request was made and the server responded with a status code
       throw new Error(
         error.response.data?.error || `Server error: ${error.response.status}`
       );
     } else if (error.request) {
-      // The request was made but no response was received
       throw new Error("No response received from server");
     } else {
-      // Something happened in setting up the request that triggered an Error
       throw new Error(error.message || "Failed to generate script");
     }
   }
 };
 
-export const generateKeywords = async (script, task) => {
+export const generateKeywords = async (script, task, GenaiToken) => {
   try {
-    // Simulating the API call (commented out actual API call for this example)
-    // const response = await axios.post(`${BASE_URL}/generate-keywords`, {
-    //   script,
-    //   task,
-    // });
-
-    const response = {
-      data: {
-        "personal Keywords":
-          "smart home, automation, voice control, smart assistant",
-        "product keywords":
-          "Alexa, Google Home, Apple HomeKit, energy saving, thermostat",
+    const response = await axios.post(
+      `http://localhost:3000/api/admin/generate-keywords`,
+      {
+        script,
+        task,
       },
-    };
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${GenaiToken}`,
+        },
+      }
+    );
 
-    // Split the keywords from the response
+    // return {
+    //   personalKeywords: ["dummyPersonalKeyword1", "dummyPersonalKeyword2"],
+    //   productKeywords: ["dummyProductKeyword1", "dummyProductKeyword2"],
+    // };
+
     return {
       personalKeywords: response.data["personal Keywords"].split(", "),
       productKeywords: response.data["product keywords"].split(", "),
