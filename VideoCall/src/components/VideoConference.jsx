@@ -34,7 +34,7 @@ const VideoConference = () => {
   const [hasPermissions, setHasPermissions] = useState(false);
   const [debugLog, setDebugLog] = useState([]);
   const [transcriptions, setTranscriptions] = useState([]);
-  const [meetingidd,setMeetingidd]=useState(null);
+  const [meetingidd,setMeetingidd]=useState(Math.random().toString(36).substring(7));
 
   const clientRef = useRef(null);
   const updateTranscription = async (transcription) => {
@@ -64,7 +64,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       
       // Format the transcription data
       const transcriptionData = {
-        meetingId: activeCall?.meetingId,
+        meetingId: meetingidd,
         transcription: {
           text: text,
           timestamp: new Date().toISOString(),
@@ -247,6 +247,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       setRemoteUsers({});
       setActiveCall(null);
       stopTranscription();
+      setMeetingidd((Math.random().toString(36).substring(7)));
     } catch (error) {
       console.error('Error leaving channel:', error);
     }
@@ -397,7 +398,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
   
       const channelName = `${CHANNEL_PREFIX}${Date.now()}`;
       const token = await generateAgoraToken(channelName);
-      const meetingId = Math.random().toString(36).substring(7);
+      const meetingId = meetingidd;
       setMeetingidd(meetingId);
       const encodedToken = encodeURIComponent(token);
       // Add meetingId to the URL
