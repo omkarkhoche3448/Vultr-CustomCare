@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Mic, PhoneOff, Send, Timer, Copy, Check } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
 import { Alert, AlertDescription } from './Alert';
 import './VideoConference.css';
+import useTranscription from './useTranscription';
 
 const VideoConference = () => {
   const APP_ID = '37df06af651b4147bfb6ad522b350d13';
@@ -15,7 +15,8 @@ const VideoConference = () => {
     { name: "Jane Smith", email: "jane.smith@example.com" },
     { name: "Alex Johnson", email: "alex.j@example.com" },
     { name: "Sarah Wilson", email: "sarah.w@example.com" }
-  ]
+  ];
+
   const [showAlert, setShowAlert] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState('');
   const [meetingLink, setMeetingLink] = useState('');
@@ -31,15 +32,9 @@ const VideoConference = () => {
   const [error, setError] = useState(null);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [debugLog, setDebugLog] = useState([]);
-  
-  // New states for transcription
-  const [fullTranscript, setFullTranscript] = useState('');
-  const [currentSpeaker, setCurrentSpeaker] = useState('Representative'); // or 'User'
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptions, setTranscriptions] = useState([]);
   
   const clientRef = useRef(null);
-  const recognizerRef = useRef(null);
-  const audioStreamRef = useRef(null);
 
   const checkPermissions = async () => {
     try {
@@ -54,6 +49,15 @@ const VideoConference = () => {
       return false;
     }
   };
+  const handleTranscriptionUpdate = (transcription) => {
+    setTranscriptions(prev => [...prev, transcription]);
+  };
+
+  const { transcriptionEnabled, startTranscription, stopTranscription } = 
+    useTranscription({ 
+      isHost: true, 
+      onTranscriptionUpdate: handleTranscriptionUpdate 
+    });
   const joinChannel = async (channelName, token) => {
     try {
       addDebugLog('Starting join channel process...');
@@ -90,18 +94,14 @@ const VideoConference = () => {
       setLocalTracks([audioTrack, videoTrack]);
       addDebugLog('Local tracks created');
 
-      // Ensure container exists before playing
       const localPlayer = document.getElementById('local-video-container');
       if (localPlayer && videoTrack) {
-        // Clear any existing content
         localPlayer.innerHTML = '';
-        // Create a new container for the video
         const videoElement = document.createElement('div');
         videoElement.style.width = '100%';
         videoElement.style.height = '100%';
         localPlayer.appendChild(videoElement);
         
-        // Play video with optimization options
         await videoTrack.play(videoElement, { 
           fit: 'contain',
           mirror: true
@@ -123,123 +123,8 @@ const VideoConference = () => {
     }
   };
 
-  const addToTranscript = (speaker, text) => {
-    setFullTranscript(prev => {
-      const timestamp = new Date().toLocaleTimeString();
-      const newEntry = `[${timestamp}] ${speaker}: "${text.trim()}"\n`;
-      const updatedTranscript = prev + newEntry;
-      
-      // Log the update to console
-      console.log('[Transcript Updated]');
-      console.log('New Entry:', newEntry.trim());
-      console.log('Full Transcript:', updatedTranscript);
-      
-      return updatedTranscript;
-    });
-  };
-  const startTranscription = async (audioTrack) => {
+  const leaveChannel = async () => {
     try {
-      if (!audioTrack) {
-        throw new Error('Audio track not provided');
-      }
-
-      addDebugLog('Starting transcription...');
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioStreamRef.current = stream;
-
-      const speechConfig = speechsdk.SpeechConfig.fromSubscription(
-        "3L9mmCFXqbJfQ7mqeCdb5UjTVFuwXlaox9VI27FMaV4urVaXn87gJQQJ99AJACGhslBXJ3w3AAAYACOGbUV6",
-        "centralindia"
-      );
-      speechConfig.speechRecognitionLanguage = 'en-US';
-
-      const audioConfig = speechsdk.AudioConfig.fromStreamInput(stream);
-      const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
-      recognizerRef.current = recognizer;
-
-      // Track interim results for each recognition session
-      let interimResult = '';
-
-      recognizer.recognizing = (_, event) => {
-        if (event.result.text) {
-          interimResult = event.result.text;
-          console.log(`[Interim ${currentSpeaker}] ${interimResult}`);
-        }
-      };
-      
-      recognizer.recognized = (_, event) => {
-        if (event.result.reason === speechsdk.ResultReason.RecognizedSpeech) {
-          const finalText = event.result.text.trim();
-          if (finalText) {
-            console.log(`[Final ${currentSpeaker}] ${finalText}`);
-            
-            // Only add to transcript if the final result is different from interim
-            if (finalText !== interimResult.trim()) {
-              addToTranscript(currentSpeaker, finalText);
-            }
-            
-            // Reset interim result
-            interimResult = '';
-          }
-        }
-      };
-      
-      recognizer.canceled = (_, event) => {
-        console.log(`[Transcription Canceled] Reason: ${event.reason}`);
-        if (event.reason === speechsdk.CancellationReason.Error) {
-          console.error(`[Transcription Error] ${event.errorDetails}`);
-          setError(`Transcription error: ${event.errorDetails}`);
-          addToTranscript('System', `Transcription Error: ${event.errorDetails}`);
-        }
-      };
-
-      recognizer.sessionStarted = (_, event) => {
-        console.log('[Transcription Session Started]');
-        addToTranscript('System', 'Transcription Started');
-      };
-
-      recognizer.sessionStopped = (_, event) => {
-        console.log('[Transcription Session Stopped]');
-        addToTranscript('System', 'Transcription Stopped');
-      };
-
-      await recognizer.startContinuousRecognitionAsync();
-      setIsTranscribing(true);
-      addDebugLog('Transcription started successfully');
-    } catch (error) {
-      console.error('Transcription error:', error);
-      setError(`Failed to start transcription: ${error.message}`);
-      addDebugLog(`Transcription error: ${error.message}`);
-      addToTranscript('System', `Error: ${error.message}`);
-    }
-  };
-
-  const stopTranscription = async () => {
-    try {
-      if (recognizerRef.current) {
-        await recognizerRef.current.stopContinuousRecognitionAsync();
-        addToTranscript('System', 'Transcription Ended');
-        recognizerRef.current = null;
-      }
-      if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(track => track.stop());
-        audioStreamRef.current = null;
-      }
-      console.log('[Transcription] Stopping...');
-      setIsTranscribing(false);
-      addDebugLog('Transcription stopped successfully');
-      console.log('[Transcription] Stopped successfully');
-    } catch (error) {
-      console.error('Error stopping transcription:', error);
-      addDebugLog(`Error stopping transcription: ${error.message}`);
-      addToTranscript('System', `Error Stopping Transcription: ${error.message}`);
-    }
-  };
-  const leaveAndRemoveLocalStream = async () => {
-    try {
-      await stopTranscription();
-      
       if (localTracks.length > 0) {
         localTracks.forEach(track => {
           track.stop();
@@ -254,11 +139,11 @@ const VideoConference = () => {
       setLocalTracks([]);
       setRemoteUsers({});
       setActiveCall(null);
-      setTranscribedText('');
     } catch (error) {
       console.error('Error leaving channel:', error);
     }
   };
+
   useEffect(() => {
     const initializeAgoraClient = async () => {
       try {
@@ -273,9 +158,8 @@ const VideoConference = () => {
           addDebugLog(`Connection state changed from ${prevState} to ${curState}`);
           
           if (curState === 'DISCONNECTED') {
-            stopTranscription();
             setError('Connection lost. Please try rejoining the call.');
-            leaveAndRemoveLocalStream();
+            leaveChannel();
           }
         });
 
@@ -300,12 +184,13 @@ const VideoConference = () => {
 
     return () => {
       if (clientRef.current) {
-        leaveAndRemoveLocalStream();
+        leaveChannel();
         clientRef.current.removeAllListeners();
         clientRef.current = null;
       }
     };
   }, []);
+
   const handleUserJoined = async (user, mediaType) => {
     addDebugLog(`Remote user ${user.uid} joined with ${mediaType}`);
     try {
@@ -319,15 +204,12 @@ const VideoConference = () => {
       if (mediaType === 'video') {
         const remotePlayer = document.getElementById('remote-video-container');
         if (remotePlayer) {
-          // Clear existing content
           remotePlayer.innerHTML = '';
-          // Create new container for video
           const videoElement = document.createElement('div');
           videoElement.style.width = '100%';
           videoElement.style.height = '100%';
           remotePlayer.appendChild(videoElement);
           
-          // Play video with optimization options
           await user.videoTrack.play(videoElement, {
             fit: 'contain',
             mirror: false
@@ -344,7 +226,6 @@ const VideoConference = () => {
       setRemoteUsers(prev => ({ ...prev, [user.uid]: user }));
     } catch (error) {
       addDebugLog(`Error handling user joined: ${error.message}`);
-      // Retry subscription after a short delay
       setTimeout(() => {
         if (clientRef.current) {
           handleUserJoined(user, mediaType);
@@ -353,16 +234,19 @@ const VideoConference = () => {
     }
   };
 
+  const handleUserLeft = (user) => {
+    setRemoteUsers(prev => {
+      const updated = { ...prev };
+      delete updated[user.uid];
+      return updated;
+    });
+  };
 
   const addDebugLog = (message) => {
     console.log(`[Host Debug] ${message}`);
     setDebugLog(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
-
-
-
-  // Start cooldown timer effect
   useEffect(() => {
     const timers = {};
     
@@ -426,14 +310,13 @@ const VideoConference = () => {
   const generateMeetingLink = async (email) => {
     try {
       if (activeCall) {
-        await leaveAndRemoveLocalStream();
+        await leaveChannel();
       }
   
       const channelName = `${CHANNEL_PREFIX}${Date.now()}`;
       const token = await generateAgoraToken(channelName);
       const meetingId = Math.random().toString(36).substring(7);
       
-      // Encode the token to handle special characters
       const encodedToken = encodeURIComponent(token);
       const fullUrl = `${window.location.origin}/join/${channelName}/${encodedToken}`;
       
@@ -455,35 +338,11 @@ const VideoConference = () => {
     }
   };
 
-
-  
-
-
-  const handleUserLeft = (user) => {
-    setRemoteUsers(prev => {
-      const updated = { ...prev };
-      delete updated[user.uid];
-      return updated;
-    });
-  };
-
-
-  useEffect(() => {
-    return () => {
-      if (recognizerRef.current) {
-        stopTranscription();
-      }
-    };
-  }, []);
-
   const toggleMic = async () => {
     if (localTracks[0]) {
       await localTracks[0].setEnabled(!isMicOn);
       setIsMicOn(!isMicOn);
     }
-  };
-  const toggleSpeaker = () => {
-    setCurrentSpeaker(prev => prev === 'Representative' ? 'User' : 'Representative');
   };
 
   const toggleCamera = async () => {
@@ -492,7 +351,6 @@ const VideoConference = () => {
       if (videoTrack) {
         await videoTrack.setEnabled(!isCameraOn);
         
-        // If turning camera on, ensure video is playing
         if (!isCameraOn) {
           const localPlayer = document.getElementById('local-video-container');
           if (localPlayer) {
@@ -516,6 +374,27 @@ const VideoConference = () => {
       setError('Failed to toggle camera');
     }
   };
+  const TranscriptionPanel = () => (
+    <div className="transcription-panel">
+      <div className="transcription-controls">
+        <button
+          onClick={transcriptionEnabled ? stopTranscription : startTranscription}
+          className={`control-button ${transcriptionEnabled ? 'active' : ''}`}
+        >
+          {transcriptionEnabled ? 'Stop Transcription' : 'Start Transcription'}
+        </button>
+      </div>
+      <div className="transcription-messages">
+        {transcriptions.map((t, i) => (
+          <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
+            <span className="timestamp">{new Date(t.timestamp).toLocaleTimeString()}</span>
+            <span className="speaker">{t.isHost ? 'Rep' : 'Consumer'}:</span>
+            <span className="text">{t.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   return (
     <div className="video-conference">
       {/* Left Column - Consumers List */}
@@ -579,7 +458,7 @@ const VideoConference = () => {
               <Mic size={24} />
             </button>
             <button
-              onClick={leaveAndRemoveLocalStream}
+              onClick={leaveChannel}
               disabled={!activeCall}
               className="control-button end-call"
             >
@@ -588,32 +467,6 @@ const VideoConference = () => {
           </div>
         </div>
       </div>
-
-      {/* Right Column - Transcription */}
-      <div className="transcription-section">
-        <div className="transcription-header">
-          <div className="transcription-status">
-            <div className="status-indicator">
-              <div className={`status-dot ${isTranscribing ? 'active' : 'inactive'}`}></div>
-              <span>{isTranscribing ? 'Transcription Active' : 'Transcription Inactive'}</span>
-            </div>
-            {isTranscribing && (
-              <button 
-                onClick={toggleSpeaker}
-                className="speaker-button"
-              >
-                Speaker: {currentSpeaker}
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="transcription-content">
-          <pre className="transcription-text">
-            {fullTranscript || 'Waiting for speech...'}
-          </pre>
-        </div>
-      </div>
-
       {/* Meeting Link Alert Modal */}
       {showAlert && (
         <div className="meeting-link-modal">
@@ -640,6 +493,13 @@ const VideoConference = () => {
         </div>
       )}
 
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Debug Log */}
       {process.env.NODE_ENV === 'development' && (
         <div className="debug-log">
@@ -648,9 +508,10 @@ const VideoConference = () => {
           ))}
         </div>
       )}
+      <TranscriptionPanel />
     </div>
+    
   );
 };
-
 
 export default VideoConference;

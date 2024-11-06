@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Mic, PhoneOff, Send, Timer, Copy, Check } from 'lucide-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
 import { Alert, AlertDescription } from './Alert';
 import './VideoConference.css';
 
 const VideoConference = () => {
   // ... (keep existing state and constants)
 
+  // Modify the speech recognition initialization
 
 
+  // Modify the transcription effect
 
 
+  // Modify the leaveChannel function
 
-  // ... (rest of the component remains the same)
+  // ... (keep rest of the component unchanged)
 };
 
 export default VideoConference;

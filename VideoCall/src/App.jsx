@@ -9,6 +9,7 @@ const App = () => {
     <Router>
       <Routes>
         {/* Sales Representative Dashboard */}
+        
         <Route path="/dashboard" element={<VideoConference />} />
         
         {/* Consumer Meeting View - Modified to handle long tokens */}
