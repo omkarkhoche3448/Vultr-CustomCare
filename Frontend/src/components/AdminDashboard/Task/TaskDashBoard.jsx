@@ -8,9 +8,9 @@ import {
   fetchCustomers,
   fetchTasks,
 } from "../../../services/operations/adminServices";
+import Loader from "../Loader";
 
 const RepresentativeTaskDashboard = () => {
-
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
   const { representatives } = useSelector((state) => state.representatives);
@@ -42,9 +42,9 @@ const RepresentativeTaskDashboard = () => {
     loadAllData();
   }, [dispatch, token]);
 
-  console.log("Rep:",representatives);
-  console.log("Cust:",customers);
-  console.log("Task:",tasks);
+  console.log("Rep:", representatives);
+  console.log("Cust:", customers);
+  console.log("Task:", tasks);
 
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -176,73 +176,6 @@ const RepresentativeTaskDashboard = () => {
           </div>
         </div>
 
-        {/* Task Table */}
-        {/* <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Due Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentTasks.map((task) => (
-                <tr
-                  key={task.taskId}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {task.projectTitle}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {task.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                        task.status
-                      )}`}
-                    >
-                      {task.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(
-                        task.priority
-                      )}`}
-                    >
-                      {task.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {task.assignedDate}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {task.dueDate}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div> */}
-
         <TaskTable
           tasks={tasks}
           onEdit={handleEdit}
@@ -280,9 +213,7 @@ const RepresentativeTaskDashboard = () => {
 
         {/* No Tasks Message */}
         {filteredTasks.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No tasks found matching the selected filter.
-          </div>
+         <Loader/>
         )}
       </div>
 

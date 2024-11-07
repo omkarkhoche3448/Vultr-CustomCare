@@ -22,6 +22,7 @@ import {
   // deleteRepresentative,
 } from "../../../services/operations/adminServices";
 import { toast } from "react-hot-toast";
+import Loader from "../Loader";
 
 const RepresentativeTable = () => {
   const dispatch = useDispatch();
@@ -31,7 +32,6 @@ const RepresentativeTable = () => {
 
   const [representative, setRepresentative] = useState(representatives);
   const { token } = useSelector((state) => state.auth);
-  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRepresentative, setSelectedRepresentative] = useState(null);
   const [actionType, setActionType] = useState(null);
@@ -390,29 +390,31 @@ const RepresentativeTable = () => {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <span className="ml-3 text-gray-600">
-              Loading representatives...
-            </span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <TableHeader label="Name" sortKey="name" />
+                <TableHeader label="Email" sortKey="email" />
+                <TableHeader label="Skillset" sortKey="skillset" />
+                <TableHeader label="Status" sortKey="status" />
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {paginatedData.length == 0 ? (
                 <tr>
-                  <TableHeader label="Name" sortKey="name" />
-                  <TableHeader label="Email" sortKey="email" />
-                  <TableHeader label="Skillset" sortKey="skillset" />
-                  <TableHeader label="Status" sortKey="status" />
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
+                  >
+                    <Loader/>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedData.map((rep, index) => (
+              ) : (
+                paginatedData.map((rep, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -455,11 +457,11 @@ const RepresentativeTable = () => {
                       <ActionsDropdown rep={rep} index={index} />
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="flex justify-between items-center">
@@ -472,7 +474,7 @@ const RepresentativeTable = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1 || loading}
+            disabled={currentPage === 1 || <Loader />}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={16} />
@@ -484,7 +486,7 @@ const RepresentativeTable = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            disabled={currentPage === totalPages || loading}
+            disabled={currentPage === totalPages || <Loader />}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronRight size={16} />

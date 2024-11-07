@@ -22,6 +22,7 @@ import {
   setError,
 } from "../../../slices/customerSlice";
 import { fetchCustomers } from "../../../services/operations/adminServices";
+import Loader from "../Loader";
 
 const CustomerDashboard = () => {
   const dispatch = useDispatch();
@@ -37,6 +38,12 @@ const CustomerDashboard = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [viewMode, setViewMode] = useState("table");
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Extract unique categories from customers
+  const uniqueCategories = [
+    "all",
+    ...new Set(customers.map((customer) => customer.category)),
+  ];
 
   const itemsPerPage = 10;
 
@@ -74,19 +81,22 @@ const CustomerDashboard = () => {
     );
   };
 
-  const toggleFilter = (status) => {
-    if (status === "all") {
-      setSelectedFilters(["all"]);
-    } else {
-      setSelectedFilters((prevFilters) => {
-        const newFilters = prevFilters.filter((f) => f !== "all");
-        if (prevFilters.includes(status)) {
-          return newFilters.filter((f) => f !== status);
-        }
-        return [...newFilters, status];
-      });
-    }
+  const toggleFilter = (category) => {
+    setSelectedFilters((prev) => {
+      if (category === "all") {
+        return ["all"];
+      }
+
+      const newFilters = prev.filter((f) => f !== "all");
+      if (prev.includes(category)) {
+        const updatedFilters = newFilters.filter((f) => f !== category);
+        return updatedFilters.length === 0 ? ["all"] : updatedFilters;
+      }
+      return [...newFilters, category];
+    });
+    setCurrentPage(1); 
   };
+
   const handleRefresh = async () => {
     localStorage.removeItem("customers");
     dispatch(fetchCustomers(token));
@@ -109,7 +119,7 @@ const CustomerDashboard = () => {
 
         const filterMatch =
           selectedFilters.includes("all") ||
-          selectedFilters.includes(customer.status?.toLowerCase());
+          selectedFilters.includes(customer.category);
 
         return searchMatch && filterMatch;
       })
@@ -133,13 +143,34 @@ const CustomerDashboard = () => {
 
   const totalPages = Math.ceil(sortedCustomers.length / itemsPerPage);
 
+  // Filter dropdown component
+  const FilterDropdown = () => (
+    <div className="absolute top-full mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+      <div className="py-1">
+        {uniqueCategories.map((category) => (
+          <button
+            key={category}
+            onClick={() => toggleFilter(category)}
+            className={`w-full text-left px-4 py-2 text-sm ${
+              selectedFilters.includes(category)
+                ? "bg-indigo-50 text-indigo-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            {category === "all" ? "All Categories" : category}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6 p-6  min-h-screen">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Customers</h2>
-          <p className="mt-1  text-gray-500">
+          <p className="mt-1 text-gray-500">
             Manage and monitor customer product demands
           </p>
         </div>
@@ -190,33 +221,18 @@ const CustomerDashboard = () => {
             {viewMode === "table" ? "Grid View" : "Table View"}
           </button>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
-
-          {showFilters && (
-            <div className="absolute top-full mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
-              <div className="py-1">
-                {["all", "active", "away", "offline"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => toggleFilter(status)}
-                    className={`w-full text-left px-4 py-2 text-sm ${
-                      selectedFilters.includes(status)
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              {selectedFilters.includes("all")
+                ? "All Categories"
+                : `Categories (${selectedFilters.length})`}
+            </button>
+            {showFilters && <FilterDropdown />}
+          </div>
 
           <button
             onClick={handleRefresh}
@@ -282,54 +298,76 @@ const CustomerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedCustomers.map((customer) => (
-                    <tr
-                      key={customer.email}
-                      className={`hover:bg-gray-50 ${
-                        selectedCustomers.includes(customer.id)
-                          ? "bg-gray-100"
-                          : "bg-white"
-                      }`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          checked={selectedCustomers.includes(customer.id)}
-                          onChange={() => handleCustomerSelect(customer.id)}
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                            <span className="text-purple-600 font-medium">
-                              {customer.customername?.charAt(0)?.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {customer.customername}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {customer.productdemand}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-                          {customer.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                  {customers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
+                      >
+                        <Loader />
                       </td>
                     </tr>
-                  ))}
+                  ) : paginatedCustomers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
+                      >
+                        No customers found
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedCustomers.map((customer) => (
+                      <tr
+                        key={customer.email}
+                        className={`hover:bg-gray-50 ${
+                          selectedCustomers.includes(customer.id)
+                            ? "bg-gray-100"
+                            : "bg-white"
+                        }`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            checked={selectedCustomers.includes(customer.id)}
+                            onChange={() => handleCustomerSelect(customer.id)}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                              <span className="text-purple-600 font-medium">
+                                {customer.customername
+                                  ?.charAt(0)
+                                  ?.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {customer.customername}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {customer.productdemand}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                            {customer.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

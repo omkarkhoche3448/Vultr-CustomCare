@@ -39,6 +39,7 @@ export const createTask = async (taskData, token) => {
 };
 
 export const fetchTasks = (token) => async (dispatch) => {
+  // console.log("Token:", token);
   console.log("Fetching tasks...");
   try {
     dispatch(setLoading(true));
@@ -47,7 +48,7 @@ export const fetchTasks = (token) => async (dispatch) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log("Task response:", response.data);
+    // console.log("Task response:", response.data);
     dispatch(setTasks(response.data));
     dispatch(setLoading(false));
     return response.data;

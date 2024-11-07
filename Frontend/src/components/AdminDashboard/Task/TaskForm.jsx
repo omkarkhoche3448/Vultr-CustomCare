@@ -18,6 +18,7 @@ import {
 } from "../../../services/operations/adminServices";
 import { toast } from "react-hot-toast";
 import { createTask } from "../../../services/operations/adminServices";
+import { CustomerSelect, TeamMemberSelect } from "./Dropdown";
 
 const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT;
 
@@ -30,7 +31,6 @@ const TaskForm = ({
   customers = [],
   handle,
 }) => {
-  console.log('Customers received in Task Form:', customers);
   const defaultValues = {
     category: task?.category || "",
     customers: task?.customers || [],
@@ -101,6 +101,24 @@ const TaskForm = ({
     },
   }));
 
+  const handleCustomerChange = (selectedOptions) => {
+    if (!selectedOptions || selectedOptions.length === 0) {
+      setValue("customers", []);
+      setSelectAllChecked(false);
+      toast.info("All customers deselected");
+      return;
+    }
+    const selectedCustomerData = selectedOptions.map((option) => ({
+      id: option.customer.id,
+      name: option.customer.name,
+      email: option.customer.email,
+      productDemand: option.customer.productDemand,
+      category: option.customer.category,
+    }));
+    setValue("customers", selectedCustomerData);
+    setSelectAllChecked(selectedOptions.length === availableCustomers.length);
+  };
+
   const handleSelectAllCustomers = () => {
     if (!selectedCategory) return;
 
@@ -110,9 +128,10 @@ const TaskForm = ({
     if (newSelectAllState) {
       const allCustomersData = availableCustomers.map((customer) => ({
         id: customer.id,
-        name: customer.name,
+        name: customer.customername,
         email: customer.email,
-        productDemand: customer.productDemand,
+        productDemand: customer.productdemand,
+        category: customer.category,
       }));
       setValue("customers", allCustomersData);
     } else {
@@ -133,25 +152,6 @@ const TaskForm = ({
       setAvailableCustomers(filtered);
     } else {
       setAvailableCustomers(customers);
-    }
-  };
-
-  const handleCustomerChange = (selectedOptions) => {
-    if (selectedOptions) {
-      const selectedCustomerData = selectedOptions.map((option) => ({
-        id: option.customer.id,
-        name: option.customer.name,
-        email: option.customer.email,
-        productDemand: option.customer.productDemand,
-        category: option.customer.category,
-      }));
-      setValue("customers", selectedCustomerData);
-      setSelectAllChecked(selectedOptions.length === availableCustomers.length);
-      toast.success(`${selectedOptions.length} customers selected`);
-    } else {
-      setValue("customers", []);
-      setSelectAllChecked(false);
-      toast.info("All customers deselected");
     }
   };
 
@@ -359,86 +359,15 @@ const TaskForm = ({
               </div>
 
               {/* Customer Multi-Select with Select All */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-slate-600">
-                    Customers
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">
-                      {selectedCustomers?.length || 0} selected
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={selectAllChecked}
-                      onChange={handleSelectAllCustomers}
-                      disabled={!selectedCategory}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-600">Select All</span>
-                  </div>
-                </div>
-                <Controller
-                  name="customers"
-                  control={control}
-                  rules={{ required: "At least one customer is required" }}
-                  render={({ field }) => (
-                    <Select
-                      isMulti
-                      options={customerOptions}
-                      value={customerOptions.filter((option) =>
-                        selectedCustomers?.some(
-                          (selected) => selected.id === option.value
-                        )
-                      )}
-                      onChange={handleCustomerChange}
-                      isDisabled={!selectedCategory}
-                      className="react-select-container"
-                      classNamePrefix="react-select"
-                      placeholder={
-                        selectedCategory
-                          ? "Select customers..."
-                          : "Please select a category first"
-                      }
-                      // Add these props for better UI feedback
-                      isClearable={true}
-                      isSearchable={true}
-                      closeMenuOnSelect={false}
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          minHeight: "45px",
-                          backgroundColor: "#f8fafc",
-                          border: "none",
-                          borderRadius: "0.75rem",
-                          boxShadow: "none",
-                          "&:hover": {
-                            border: "none",
-                          },
-                        }),
-                        multiValue: (base) => ({
-                          ...base,
-                          backgroundColor: "#e0e7ff",
-                          borderRadius: "0.5rem",
-                        }),
-                        multiValueLabel: (base) => ({
-                          ...base,
-                          color: "#4f46e5",
-                          fontWeight: "500",
-                        }),
-                        multiValueRemove: (base) => ({
-                          ...base,
-                          color: "#4f46e5",
-                          "&:hover": {
-                            backgroundColor: "#c7d2fe",
-                            color: "#4338ca",
-                          },
-                        }),
-                      }}
-                    />
-                  )}
-                />
-              </div>
+              <CustomerSelect
+                customers={availableCustomers}
+                selectedCategory={selectedCategory}
+                selectedCustomers={selectedCustomers}
+                onChange={(customers) => setValue("customers", customers)}
+                error={errors.customers?.message}
+                onSelectAll={handleSelectAllCustomers}
+                selectAllChecked={selectAllChecked}
+              />
             </div>
 
             {/* Project Title */}
@@ -665,85 +594,19 @@ const TaskForm = ({
             </div>
 
             {/* Team Members Section */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-600">
-                Team Members
-              </label>
-              <Controller
-                name="assignedMembers"
-                control={control}
-                rules={{ required: "Please assign a team member" }}
-                render={({ field: { onChange, value } }) => (
-                  <Select
-                    isMulti={false} // Change this to false for single selection
-                    options={teamMembers.map((member) => ({
-                      value: member.id,
-                      label: (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                            <UserCircle className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{member.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {member.skillset}
-                            </p>
-                          </div>
-                        </div>
-                      ),
-                      member: member,
-                    }))}
-                    value={
-                      teamMembers
-                        .filter((member) => member.id === value?.id)
-                        .map((member) => ({
-                          value: member.id,
-                          label: (
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                                <UserCircle className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {member.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {member.skillset}
-                                </p>
-                              </div>
-                            </div>
-                          ),
-                          member: member,
-                        }))[0]
-                    }
-                    onChange={(selected) => {
-                      onChange(selected ? selected.member : null);
-                    }}
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    placeholder="Select team member..."
-                    styles={{
-                      control: (base) => ({
-                        ...base,
-                        minHeight: "45px",
-                        backgroundColor: "#f8fafc",
-                        border: "none",
-                        borderRadius: "0.75rem",
-                        boxShadow: "none",
-                        "&:hover": {
-                          border: "none",
-                        },
-                      }),
-                    }}
-                  />
-                )}
-              />
-              {errors.assignedMembers && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.assignedMembers.message}
-                </p>
+            <Controller
+              name="assignedMembers"
+              control={control}
+              rules={{ required: "Please assign a team member" }}
+              render={({ field: { onChange, value } }) => (
+                <TeamMemberSelect
+                  teamMembers={teamMembers}
+                  value={value}
+                  onChange={onChange}
+                  error={errors.assignedMembers?.message}
+                />
               )}
-            </div>
+            />
           </div>
         </div>
 
