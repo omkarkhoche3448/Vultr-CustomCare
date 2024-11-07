@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   representatives: [],
@@ -7,23 +7,24 @@ const initialState = {
 };
 
 const representativesSlice = createSlice({
-  name: 'representatives',
+  name: "representatives",
   initialState,
   reducers: {
     setRepresentatives(state, action) {
       state.representatives = action.payload;
-      state.loading = false;
+      state.loading = false; 
       state.error = null;
     },
-    setLoading(state) {
-      state.loading = true;
+    setLoading(state, action) {
+      state.loading = action.payload ?? true; 
     },
     setError(state, action) {
-      state.loading = false;
+      state.loading = false; 
       state.error = action.payload;
     },
   },
 });
 
-export const { setRepresentatives, setLoading, setError } = representativesSlice.actions;
+export const { setRepresentatives, setLoading, setError } =
+  representativesSlice.actions;
 export default representativesSlice.reducer;

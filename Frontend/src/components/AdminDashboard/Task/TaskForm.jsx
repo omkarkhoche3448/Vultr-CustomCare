@@ -30,7 +30,7 @@ const TaskForm = ({
   customers = [],
   handle,
 }) => {
-  // console.log('Customers received:', customers);
+  console.log('Customers received in Task Form:', customers);
   const defaultValues = {
     category: task?.category || "",
     customers: task?.customers || [],
@@ -86,9 +86,9 @@ const TaskForm = ({
       }));
   }, [customers]);
 
-  // Transform customers into Select options with additional info
   const customerOptions = availableCustomers.map((customer) => ({
     value: customer.id,
+    key: customer.email,
     label: `${customer.customername || "No Name"} - ${
       customer.email || "No Email"
     } - ${customer.productdemand || "No Product"}`,
@@ -101,7 +101,6 @@ const TaskForm = ({
     },
   }));
 
-  // New function to handle select all customers
   const handleSelectAllCustomers = () => {
     if (!selectedCategory) return;
 
@@ -109,7 +108,6 @@ const TaskForm = ({
     setSelectAllChecked(newSelectAllState);
 
     if (newSelectAllState) {
-      // Select all customers of the current category
       const allCustomersData = availableCustomers.map((customer) => ({
         id: customer.id,
         name: customer.name,
@@ -118,16 +116,14 @@ const TaskForm = ({
       }));
       setValue("customers", allCustomersData);
     } else {
-      // Deselect all customers
       setValue("customers", []);
     }
   };
 
-  // Update select all state when category changes
   const handleCategoryChange = (selectedOption) => {
     setValue("category", selectedOption.value);
-    setValue("customers", []); // Reset customer selection
-    setSelectAllChecked(false); // Reset select all state
+    setValue("customers", []);
+    setSelectAllChecked(false);
 
     if (selectedOption.value) {
       const filtered = customers.filter(
@@ -140,7 +136,6 @@ const TaskForm = ({
     }
   };
 
-  // Existing handleCustomerChange with added select all state update
   const handleCustomerChange = (selectedOptions) => {
     if (selectedOptions) {
       const selectedCustomerData = selectedOptions.map((option) => ({
@@ -151,11 +146,12 @@ const TaskForm = ({
         category: option.customer.category,
       }));
       setValue("customers", selectedCustomerData);
-
       setSelectAllChecked(selectedOptions.length === availableCustomers.length);
+      toast.success(`${selectedOptions.length} customers selected`);
     } else {
       setValue("customers", []);
       setSelectAllChecked(false);
+      toast.info("All customers deselected");
     }
   };
 
@@ -256,7 +252,6 @@ const TaskForm = ({
     },
   };
 
-  // console.log( "teamMembers",teamMembers[0].skillset)
   const memberOptions =
     teamMembers?.map((member) => ({
       value: member,
@@ -280,10 +275,14 @@ const TaskForm = ({
   ];
 
   const onSubmitForm = async (data) => {
+    console.log("Submitting form data:", data.assignedMembers);
     try {
       const taskData = {
         ...data,
-        assignedMembers: data.assignedMembers.map((member) => ({
+        assignedMembers: (Array.isArray(data.assignedMembers)
+          ? data.assignedMembers
+          : [data.assignedMembers]
+        ).map((member) => ({
           id: member.id,
           name: member.name,
         })),
@@ -366,6 +365,9 @@ const TaskForm = ({
                     Customers
                   </label>
                   <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      {selectedCustomers?.length || 0} selected
+                    </span>
                     <input
                       type="checkbox"
                       checked={selectAllChecked}
@@ -398,6 +400,10 @@ const TaskForm = ({
                           ? "Select customers..."
                           : "Please select a category first"
                       }
+                      // Add these props for better UI feedback
+                      isClearable={true}
+                      isSearchable={true}
+                      closeMenuOnSelect={false}
                       styles={{
                         control: (base) => ({
                           ...base,
@@ -408,6 +414,24 @@ const TaskForm = ({
                           boxShadow: "none",
                           "&:hover": {
                             border: "none",
+                          },
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: "#e0e7ff",
+                          borderRadius: "0.5rem",
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: "#4f46e5",
+                          fontWeight: "500",
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: "#4f46e5",
+                          "&:hover": {
+                            backgroundColor: "#c7d2fe",
+                            color: "#4338ca",
                           },
                         }),
                       }}
@@ -648,10 +672,10 @@ const TaskForm = ({
               <Controller
                 name="assignedMembers"
                 control={control}
-                rules={{ required: "Please assign at least one team member" }}
+                rules={{ required: "Please assign a team member" }}
                 render={({ field: { onChange, value } }) => (
                   <Select
-                    isMulti
+                    isMulti={false} // Change this to false for single selection
                     options={teamMembers.map((member) => ({
                       value: member.id,
                       label: (
@@ -669,39 +693,35 @@ const TaskForm = ({
                       ),
                       member: member,
                     }))}
-                    value={teamMembers
-                      .filter((member) =>
-                        value?.some(
-                          (selectedMember) => selectedMember.id === member.id
-                        )
-                      )
-                      .map((member) => ({
-                        value: member.id,
-                        label: (
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                              <UserCircle className="w-4 h-4 text-blue-600" />
+                    value={
+                      teamMembers
+                        .filter((member) => member.id === value?.id)
+                        .map((member) => ({
+                          value: member.id,
+                          label: (
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                <UserCircle className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {member.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {member.skillset}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {member.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {member.skillset}
-                              </p>
-                            </div>
-                          </div>
-                        ),
-                        member: member,
-                      }))}
+                          ),
+                          member: member,
+                        }))[0]
+                    }
                     onChange={(selected) => {
-                      onChange(
-                        selected ? selected.map((option) => option.member) : []
-                      );
+                      onChange(selected ? selected.member : null);
                     }}
                     className="react-select-container"
                     classNamePrefix="react-select"
-                    placeholder="Select team members..."
+                    placeholder="Select team member..."
                     styles={{
                       control: (base) => ({
                         ...base,
@@ -725,7 +745,6 @@ const TaskForm = ({
               )}
             </div>
           </div>
-          
         </div>
 
         {/* Submit Button */}

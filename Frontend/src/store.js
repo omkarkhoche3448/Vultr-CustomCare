@@ -10,11 +10,7 @@ const store = configureStore({
     task: taskReducer,
     customers: customerReducer, 
     representatives: representativesReducer,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    })
+  }
 });
 
 export default store;

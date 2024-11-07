@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTasks } from '../../../services/operations/taskServices';
+import { fetchTasks } from '../../../services/operations/adminServices';
 import { formatDistance } from 'date-fns';
 
 const StatusBadge = ({ status }) => {

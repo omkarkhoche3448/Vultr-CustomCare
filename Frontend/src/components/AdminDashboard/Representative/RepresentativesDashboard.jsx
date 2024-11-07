@@ -11,7 +11,6 @@ import {
 } from "../../../slices/representativesSlice";
 import Modal from "../Modal";
 
-
 const RepresentativesDashboard = () => {
   const dispatch = useDispatch();
   const { representatives, loading, error } = useSelector(
@@ -23,9 +22,29 @@ const RepresentativesDashboard = () => {
   const loadRepresentatives = async () => {
     try {
       dispatch(setLoading(true));
-      const reps = await fetchRepresentatives(token);
-      dispatch(setRepresentatives(reps));
-      localStorage.setItem("representatives", JSON.stringify(reps));
+
+      // Check Redux state (assuming `representatives` is in state)
+      const stateReps = useSelector((state) => state.representatives);
+
+      // Check local storage
+      const localStorageReps = JSON.parse(
+        localStorage.getItem("representatives")
+      );
+
+      if (
+        stateReps.length === 0 &&
+        (!localStorageReps || localStorageReps.length === 0)
+      ) {
+        // Fetch representatives from API if none found
+        const reps = await fetchRepresentatives(token);
+        dispatch(setRepresentatives(reps));
+
+        // Store in localStorage for future use
+        localStorage.setItem("representatives", JSON.stringify(reps));
+      } else {
+        // If data is found in local storage, use it to set representatives in Redux
+        dispatch(setRepresentatives(localStorageReps || stateReps));
+      }
     } catch (err) {
       dispatch(setError("Failed to fetch representatives"));
     } finally {
@@ -34,10 +53,8 @@ const RepresentativesDashboard = () => {
   };
 
   useEffect(() => {
-    if (representatives.length === 0) {
-      loadRepresentatives();
-    }
-  }, [token]);
+    loadRepresentatives();
+  }, [dispatch, token]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -65,6 +82,8 @@ const RepresentativesDashboard = () => {
     });
     setIsModalOpen(false);
   };
+
+  console.log("Representativedash:", representatives);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -104,7 +123,10 @@ const RepresentativesDashboard = () => {
         <StatsGrid representatives={representatives} />
 
         {/* Representatives Table */}
-        <RepresentativeTable representatives={representatives} />
+        <RepresentativeTable
+          representatives={representatives}
+          onRefresh={loadRepresentatives}
+        />
       </div>
 
       {/* Add Representative Modal */}

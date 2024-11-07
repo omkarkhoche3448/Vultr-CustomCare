@@ -1,29 +1,31 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Users, LifeBuoy, Settings } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchRepresentatives } from '../../../services/operations/adminServices';
+import { setRepresentatives, setLoading, setError } from '../../../slices/representativesSlice';
 
 const StatsGrid = () => {
-  const [representatives, setRepresentatives] = useState([]);
+  const dispatch = useDispatch();
+  const { representatives, loading } = useSelector((state) => state.representatives);
+  const { token } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // Simulate an API call to fetch representatives
-    const fetchRepresentatives = () => {
-      // Dummy data to simulate API response
-      const dummyData = [
-        { name: "John Doe", email: "john@example.com", skillset: "Customer Support", status: "Active" },
-        { name: "Jane Smith", email: "jane@example.com", skillset: "Technical Support", status: "Inactive" },
-        { name: "Alice Johnson", email: "alice@example.com", skillset: "Customer Support", status: "Active" },
-        { name: "Bob Brown", email: "bob@example.com", skillset: "Technical Support", status: "Active" },
-        { name: "Charlie Davis", email: "charlie@example.com", skillset: "Customer Support", status: "Inactive" }
-      ];
-
-      // Simulate network delay
-      setTimeout(() => {
-        setRepresentatives(dummyData);
-      }, 1000); // 1 second delay
+    const loadRepresentatives = async () => {
+      try {
+        dispatch(setLoading(true));
+        const reps = await fetchRepresentatives(token);
+        dispatch(setRepresentatives(reps));
+      } catch (err) {
+        dispatch(setError("Failed to fetch representatives"));
+      } finally {
+        dispatch(setLoading(false));
+      }
     };
 
-    fetchRepresentatives();
-  }, []);
+    if (representatives.length === 0) {
+      loadRepresentatives();
+    }
+  }, [dispatch, token, representatives.length]);
 
   const stats = useMemo(() => {
     const customerSupportCount = representatives.filter(
@@ -40,27 +42,21 @@ const StatsGrid = () => {
         count: representatives.length,
         icon: Users,
         gradient: "from-indigo-500/10 to-blue-500/10",
-        textColor: "text-indigo-600",
-        trendValue: "+12.5%",
-        trend: "up"
+        textColor: "text-indigo-600"
       },
       {
         title: "Customer Support",
         count: customerSupportCount,
         icon: LifeBuoy,
         gradient: "from-blue-500/10 to-cyan-500/10",
-        textColor: "text-blue-600",
-        trendValue: "+8.3%",
-        trend: "up"
+        textColor: "text-blue-600"
       },
       {
         title: "Technical Support",
         count: technicalSupportCount,
         icon: Settings,
         gradient: "from-purple-500/10 to-pink-500/10",
-        textColor: "text-purple-600",
-        trendValue: "+5.2%",
-        trend: "up"
+        textColor: "text-purple-600"
       }
     ];
   }, [representatives]);
@@ -72,7 +68,6 @@ const StatsGrid = () => {
           key={index} 
           className="relative overflow-hidden bg-white rounded-2xl p-6 border border-gray-100/20 shadow-md backdrop-blur-sm"
         >
-          {/* Gradient background */}
           <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-30`} />
           
           <div className="relative flex items-start justify-between">
@@ -85,12 +80,6 @@ const StatsGrid = () => {
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-semibold text-gray-800">
                     {stat.count}
-                  </span>
-                  <span className="text-sm font-medium text-green-500 flex items-center">
-                    {stat.trendValue}
-                    <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
                   </span>
                 </div>
                 <p className="text-sm font-medium text-gray-500 mt-1">

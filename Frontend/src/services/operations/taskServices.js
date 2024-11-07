@@ -1,9 +1,4 @@
 import { toast } from "react-hot-toast";
-import {
-  setLoading,
-  setTasks,
-  setError,
-} from "../../slices/taskSlice";
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
 
@@ -15,30 +10,7 @@ const {
   GET_TASK_STATS_API,
 } = endpoints;
 
-// Fetch tasks with simulated API call
-export const fetchTasks = (token) => async (dispatch) => {
-  dispatch(setLoading(true));
 
-  try {
-    // Fetch tasks from the server
-    const response = await fetch('/api/tasks', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch tasks');
-    }
-
-    const tasks = await response.json();
-    dispatch(setTasks(tasks));
-  } catch (error) {
-    dispatch(setError(error.message));
-  } finally {
-    dispatch(setLoading(false));
-  }
-};
 // Create new task (Admin only)
 export const createTask = (taskData) => {
   return async (dispatch, getState) => {

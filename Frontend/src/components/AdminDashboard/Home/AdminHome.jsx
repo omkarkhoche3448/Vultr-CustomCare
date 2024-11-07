@@ -20,13 +20,29 @@ const AdminHome = () => {
   const [deadlines, setDeadlines] = useState([]);
 
   useEffect(() => {
-    fetchStats().then(setStats);
-    fetchRecentActivity().then(setRecentActivity);
-    fetchDeadlines().then(setDeadlines);
+    const fetchData = async () => {
+      try {
+        const statsData = await fetchStats();
+        setStats(statsData);
+
+        const activityData = await fetchRecentActivity();
+        const sortedActivities = activityData.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setRecentActivity(sortedActivities);
+
+        const deadlinesData = await fetchDeadlines();
+        setDeadlines(deadlinesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   return (
-    <div className="min-h-screen  bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="p-6">
         <DashboardHeader />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -38,6 +54,7 @@ const AdminHome = () => {
                 icon={BarChart3}
                 change="+12%"
                 isPositive={true}
+                gradient="from-blue-500 to-blue-600"
               />
               <StatCard
                 title="Completed"
@@ -45,6 +62,7 @@ const AdminHome = () => {
                 icon={CheckCircle2}
                 change="+8%"
                 isPositive={true}
+                gradient="from-green-500 to-green-600"
               />
               <StatCard
                 title="Pending"
@@ -52,6 +70,7 @@ const AdminHome = () => {
                 icon={Clock}
                 change="-5%"
                 isPositive={false}
+                gradient="from-yellow-500 to-yellow-600"
               />
               <StatCard
                 title="Team Members"
@@ -59,11 +78,12 @@ const AdminHome = () => {
                 icon={Users}
                 change="+2"
                 isPositive={true}
+                gradient="from-purple-500 to-purple-600"
               />
             </>
           )}
         </div>
-        <div className="grid grid-cols-1  gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <RecentTasks recentActivity={recentActivity} />
         </div>
       </div>

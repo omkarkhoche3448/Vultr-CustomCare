@@ -1,77 +1,71 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Modal from "../Modal";
+import TaskForm from "./TaskForm";
+import TaskTable from "./TaskTable";
 import {
   fetchRepresentatives,
   fetchCustomers,
   fetchTasks,
 } from "../../../services/operations/adminServices";
-import Modal from "../Modal";
-import TaskForm from "./TaskForm";
-import { setLoading, setError } from "../../../slices/taskSlice";
-import { setRepresentatives } from "../../../slices/representativesSlice";
-import { setCustomers } from "../../../slices/customerSlice";
-import { setTasks } from "../../../slices/taskSlice";
 
 const RepresentativeTaskDashboard = () => {
+
+  const dispatch = useDispatch();
+  const { token } = useSelector((state) => state.auth);
+  const { representatives } = useSelector((state) => state.representatives);
+  const { customers } = useSelector((state) => state.customers);
+  const { tasks } = useSelector((state) => state.task);
+
+  useEffect(() => {
+    const loadAllData = async () => {
+      try {
+        const [repsData, customersData, tasksData] = await Promise.all([
+          fetchRepresentatives(token),
+          dispatch(fetchCustomers(token)),
+          dispatch(fetchTasks(token)),
+        ]);
+
+        console.log("Data loaded successfully:", {
+          repsData,
+          customersData,
+          tasksData,
+        });
+        localStorage.setItem("representatives", JSON.stringify(repsData));
+        localStorage.setItem("customers", JSON.stringify(customersData));
+        localStorage.setItem("tasks", JSON.stringify(tasksData));
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    };
+
+    loadAllData();
+  }, [dispatch, token]);
+
+  console.log("Rep:",representatives);
+  console.log("Cust:",customers);
+  console.log("Task:",tasks);
+
   // State management
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
 
-  // Redux hooks
-  const dispatch = useDispatch();
-  const { tasks = [] } = useSelector((state) => state.task.tasks);
-  const { customers = [] } = useSelector((state) => state.customers);
-  const { representatives = [] } = useSelector((state) => state.representatives);
-  const { token } = useSelector((state) => state.auth);
+  const filteredTasks =
+    Array.isArray(tasks) && tasks.length > 0
+      ? tasks.filter(
+          (task) => statusFilter === "ALL" || task.status === statusFilter
+        )
+      : [];
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        dispatch(setLoading(true));
-
-        if (representatives.length === 0) {
-          const reps = await fetchRepresentatives(token);
-          dispatch(setRepresentatives(reps));
-        }
-
-        if (customers.length === 0) {
-          const customersData = await fetchCustomers(token);
-          dispatch(setCustomers(customersData));
-        }
-
-        if (tasks.length === 0) {
-          const tasksData = await fetchTasks(token);
-          dispatch(setTasks(tasksData));
-        }
-      } catch (err) {
-        console.error("Failed to fetch data:", err);
-        dispatch(setError(err.message));
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
-
-    loadData();
-  }, [dispatch, token, representatives.length, customers.length, tasks.length]);
-
-  console.log(tasks);
-
-  // Filter tasks based on status
-  const filteredTasks = Array.isArray(tasks) && tasks.length > 0
-  ? tasks.filter(
-      (task) => statusFilter === "ALL" || task.status === statusFilter
-    )
-  : [];
-
-  // Pagination logic
   const indexOfLastTask = currentPage * pageSize;
   const indexOfFirstTask = indexOfLastTask - pageSize;
   const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
   const totalPages = Math.ceil(filteredTasks.length / pageSize);
 
-  // Priority color mapping
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case "high":
@@ -85,7 +79,6 @@ const RepresentativeTaskDashboard = () => {
     }
   };
 
-  // Status color mapping
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case "ACTIVE":
@@ -107,10 +100,40 @@ const RepresentativeTaskDashboard = () => {
   const handleTaskSubmit = async (data) => {
     try {
       console.log("New task data:", data);
+      const tasksData = await fetchTasks(token);
+      dispatch(setTasks(tasksData));
       setIsModalOpen(false);
-      await dispatch(fetchTasks());
     } catch (error) {
       console.error("Error submitting task:", error);
+    }
+  };
+
+  const handleEdit = (task) => {
+    // Open edit modal/form
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (taskId) => {
+    try {
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this task?"
+      );
+
+      if (confirmed) {
+        // Make API call to delete task
+        // await deleteTask(taskId);
+
+        // Update local state by filtering out the deleted task
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+
+        // Show success message
+        toast.success("Task deleted successfully");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Failed to delete task");
     }
   };
 
@@ -125,7 +148,10 @@ const RepresentativeTaskDashboard = () => {
           <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Status Filter */}
             <div className="flex items-center space-x-4">
-              <label htmlFor="status-filter" className="text-gray-700 font-medium">
+              <label
+                htmlFor="status-filter"
+                className="text-gray-700 font-medium"
+              >
                 Filter by Status:
               </label>
               <select
@@ -151,7 +177,7 @@ const RepresentativeTaskDashboard = () => {
         </div>
 
         {/* Task Table */}
-        <div className="overflow-x-auto">
+        {/* <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-100 border-b">
               <tr>
@@ -177,9 +203,12 @@ const RepresentativeTaskDashboard = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={task.taskId}
+                  className="hover:bg-gray-50 transition-colors"
+                >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {task.title}
+                    {task.projectTitle}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {task.description}
@@ -212,7 +241,14 @@ const RepresentativeTaskDashboard = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </div> */}
+
+        <TaskTable
+          tasks={tasks}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          loading={loading}
+        />
 
         {/* Pagination */}
         {filteredTasks.length > 0 && (
@@ -260,6 +296,7 @@ const RepresentativeTaskDashboard = () => {
           customers={customers}
           onSubmit={handleTaskSubmit}
           onCancel={() => setIsModalOpen(false)}
+          isUpdate={false}
         />
       </Modal>
     </div>

@@ -44,7 +44,7 @@ const CustomerDashboard = () => {
     if (token && customers.length === 0) {
       dispatch(fetchCustomers(token));
     }
-  }, [dispatch, token, customers.length]);
+  }, [dispatch, token]);
 
   const handleUploadComplete = async () => {
     handleCloseModal();
@@ -100,19 +100,20 @@ const CustomerDashboard = () => {
     setIsModalOpen(false);
   };
 
-  // Data processing
-  const filteredCustomers = customers.filter((customer) => {
-    const searchMatch = Object.values(customer)
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredCustomers = Array.isArray(customers)
+    ? customers.filter((customer) => {
+        const searchMatch = Object.values(customer)
+          .join(" ")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-    const filterMatch =
-      selectedFilters.includes("all") ||
-      selectedFilters.includes(customer.status?.toLowerCase());
+        const filterMatch =
+          selectedFilters.includes("all") ||
+          selectedFilters.includes(customer.status?.toLowerCase());
 
-    return searchMatch && filterMatch;
-  });
+        return searchMatch && filterMatch;
+      })
+    : [];
 
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
     if (!sortConfig.key) return 0;

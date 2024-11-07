@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { useDispatch } from "react-redux"; 
+import { useDispatch, useSelector } from "react-redux";
 import DashboardHeader from "../SalesPersonDashBoard/DashboardHeader";
 import AdminSidebar from "./AdminSidebar";
 import TaskDashboard from "./Task/TaskDashBoard";
 import RepresentativesDashboard from "./Representative/RepresentativesDashboard";
 import CustomerDashboard from "./Customer/CustomerDashboard";
 import { logout } from "../../services/operations/authServices";
-import { fetchRepresentatives, fetchCustomers, fetchTasks, } from "../../services/operations/adminServices";
-import AdminHome  from "./home/AdminHome";
-
+import AdminHome from "./home/AdminHome";
 
 const routeConfig = {
-  home: { id: 1, component: () => <AdminHome/> },
+  home: { id: 1, component: () => <AdminHome /> },
   tasks: {
     id: 2,
-    component: () => (
-      <TaskDashboard />
-    ),
+    component: () => <TaskDashboard />,
   },
   representatives: {
     id: 3,
@@ -33,11 +29,13 @@ const idToRoute = {
   4: "customers",
 };
 
- function AdminDashboard() {
+function AdminDashboard() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
   const { adminId } = useParams();
+
+ 
 
   const getInitialIcon = () => {
     const path = location.pathname.split("/").pop();

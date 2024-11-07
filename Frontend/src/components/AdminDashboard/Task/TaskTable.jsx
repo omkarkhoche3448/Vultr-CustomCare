@@ -25,7 +25,8 @@ const TaskStatusBadge = ({ status }) => {
   );
 };
 
-const TaskTable = ({ tasks, onEdit, onDelete }) => {
+const TaskTable = ({ tasks, onEdit, onCancel, onDelete ,loading=false }) => {
+  console.log("TaskTable",tasks);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = React.useState(false);
@@ -65,8 +66,13 @@ const TaskTable = ({ tasks, onEdit, onDelete }) => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
-        <table className="w-full min-w-[1024px]">
+      <div className="bg-white  overflow-x-auto ">
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <span className="ml-3 text-gray-600">Loading tasks...</span>
+        </div>
+      ) : (<table className="w-full min-w-[1024px]">
           <thead className="bg-gray-50">
             <tr>
               <th 
@@ -83,7 +89,7 @@ const TaskTable = ({ tasks, onEdit, onDelete }) => {
                 onClick={() => handleSort('customerName')}
               >
                 <div className="flex items-center gap-2">
-                  Customer
+                  Description
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
@@ -109,7 +115,6 @@ const TaskTable = ({ tasks, onEdit, onDelete }) => {
               <tr key={task.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                 <td className="p-4">
                   <p className="font-medium text-gray-900">{task.projectTitle}</p>
-                  <p className="text-sm text-gray-500 mt-1">{task.description}</p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {task.keywords.map((keyword, index) => (
                       <span
@@ -122,12 +127,12 @@ const TaskTable = ({ tasks, onEdit, onDelete }) => {
                   </div>
                 </td>
                 <td className="p-4">
-                  <p className="font-medium text-gray-900">{task.customerName}</p>
+                  <p className="font-medium text-gray-900">{task.description}</p>
                 </td>
                 <td className="p-4">
                   <div className="flex flex-col gap-2">
                     {task.assignedMembers.map((member) => (
-                      <div key={member.id} className="flex items-center gap-2">
+                      <div key={member.email} className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
                           <UserCircle className="w-5 h-5 text-indigo-600" />
                         </div>
@@ -164,6 +169,7 @@ const TaskTable = ({ tasks, onEdit, onDelete }) => {
             ))}
           </tbody>
         </table>
+      )}
       </div>
     </div>
   );
