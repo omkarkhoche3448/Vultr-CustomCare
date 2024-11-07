@@ -37,22 +37,7 @@ const VideoConference = () => {
   const [meetingidd,setMeetingidd]=useState(Math.random().toString(36).substring(7));
 
   const clientRef = useRef(null);
-  const updateTranscription = async (transcription) => {
-    if (activeCall && activeCall.meetingId) {
-      try {
-        await axios.post('http://localhost:5000/api/transcription', {
-          meetingId: meetingidd,
-          transcription: {
-            timestamp: transcription.timestamp,
-            text: transcription.text,
-            speaker: transcription.isHost ? 'Representative' : 'Customer',
-          },
-        });
-      } catch (error) {
-        console.error("Failed to update transcription:", error);
-      }
-    }
-  };
+
   // In VideoConference.jsx, update the useTranscription hook implementation:
 
 const { transcriptionEnabled, startTranscription, stopTranscription } = useTranscription({
@@ -64,7 +49,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       
       // Format the transcription data
       const transcriptionData = {
-        meetingId: activeCall?.meetingId,
+        meetingId: meetingidd,
         transcription: {
           text: text,
           timestamp: new Date().toISOString(),
@@ -75,7 +60,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       console.log('[Representative] Sending transcription:', transcriptionData);
 
       // Send to backend API
-      const response = await fetch('http://localhost:5000/api/transcription', {
+      const response = await fetch('https://vultr-backend-server.onrender.com/api/transcription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -247,6 +232,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       setRemoteUsers({});
       setActiveCall(null);
       stopTranscription();
+      setMeetingidd((Math.random().toString(36).substring(7)));
     } catch (error) {
       console.error('Error leaving channel:', error);
     }
@@ -397,7 +383,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
   
       const channelName = `${CHANNEL_PREFIX}${Date.now()}`;
       const token = await generateAgoraToken(channelName);
-      const meetingId = Math.random().toString(36).substring(7);
+      const meetingId = meetingidd;
       setMeetingidd(meetingId);
       const encodedToken = encodeURIComponent(token);
       // Add meetingId to the URL
