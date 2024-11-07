@@ -17,7 +17,11 @@ const VideoConference = () => {
     { name: "Alex Johnson", email: "alex.j@example.com" },
     { name: "Sarah Wilson", email: "sarah.w@example.com" }
   ];
-
+  const [keywords, setKeywords] = useState([
+    { keyword: "machine learning", isIncluded: false },
+    { keyword: "deep learning", isIncluded: false },
+    { keyword: "computer vision", isIncluded: false }
+  ]);
   const [showAlert, setShowAlert] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState('');
   const [meetingLink, setMeetingLink] = useState('');
@@ -33,60 +37,181 @@ const VideoConference = () => {
   const [error, setError] = useState(null);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [debugLog, setDebugLog] = useState([]);
+  const [meetingidd, setMeetingidd] = useState(Math.random().toString(36).substring(7));
   const [transcriptions, setTranscriptions] = useState([]);
-  const [meetingidd,setMeetingidd]=useState(Math.random().toString(36).substring(7));
-
+  const [combinedRepText, setCombinedRepText] = useState('');
+  const [aiSuggestions, setAiSuggestions] = useState([]);
   const clientRef = useRef(null);
-
-  // In VideoConference.jsx, update the useTranscription hook implementation:
-
-const { transcriptionEnabled, startTranscription, stopTranscription } = useTranscription({
-  isHost: true,
-  onTranscriptionUpdate: async (transcription) => {
+  const updateCombinedText = (transcriptions) => {
+    const repTexts = transcriptions
+      .filter(t => t.speaker === 'representative')
+      .map(t => t.text)
+      .join(' ');
+    setCombinedRepText(repTexts);
+    return repTexts;
+  };
+  const getAISuggestions = async (transcriptions) => {
     try {
-      // Extract text from transcription object
-      const text = transcription?.text?.text || transcription?.text || '';
-      
-      // Format the transcription data
-      const transcriptionData = {
-        meetingId: meetingidd,
-        transcription: {
-          text: text,
-          timestamp: new Date().toISOString(),
-          speaker: 'representative' // or 'host'
+      // Only process if we have new transcriptions within the last 10 seconds
+      const currentTime = new Date();
+      const recentTranscriptions = transcriptions.filter(t => 
+        new Date(t.timestamp) > new Date(currentTime - 10000)
+      );
+
+      if (recentTranscriptions.length === 0) {
+        // If no new content, add motivational message
+        const motivationalMessages = [
+          "You're making great progress!",
+          "Keep the conversation flowing naturally",
+          "Your approach is working well",
+          "Building great rapport with customer",
+          "Excellent listening skills demonstrated"
+        ];
+        const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+        setAiSuggestions(prev => [randomMessage, ...prev].slice(0, 10));
+        return;
+      }
+
+      // Format transcriptions by speaker
+      const formattedChat = transcriptions.reduce((acc, curr) => {
+        const key = curr.speaker;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({
+          timestamp: curr.timestamp,
+          text: curr.text
+        });
+        return acc;
+      }, {});
+
+      // Prepare focused prompt for concise suggestions
+      const messages = [
+        {
+          role: "system",
+          content: `You are a sales coach providing very brief, actionable suggestions (5-6 words max).
+            Focus on customer psychology and closing techniques.
+            Each suggestion must be immediately actionable.
+            Do not explain - just provide the direct suggestion.`
+        },
+        {
+          role: "user",
+          content: JSON.stringify(formattedChat)
         }
-      };
+      ];
 
-      console.log('[Representative] Sending transcription:', transcriptionData);
-
-      // Send to backend API
-      const response = await fetch('https://vultr-backend-server.onrender.com/api/transcription', {
+      const response = await fetch('https://api.vultrinference.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': '47QNM43RTTG3D52ZECKSIJDLUY5L242XJCGQ'
         },
-        body: JSON.stringify(transcriptionData)
+        body: JSON.stringify({
+          model: "llama2-13b-chat-Q5_K_M",
+          messages: messages,
+          max_tokens: 256, // Reduced for shorter responses
+          temperature: 0.7,
+          top_k: 40,
+          top_p: 0.9
+        })
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Update local state
-      setTranscriptions(prev => [...prev, {
-        text: text,
-        timestamp: transcriptionData.transcription.timestamp,
-        isHost: true,
-        channelName: activeCall?.channelName
-      }]);
-
-      console.log('[Representative] Transcription sent successfully');
-
+      const data = await response.json();
+      const newSuggestion = data.choices[0].message.content.split('\n')[0].trim();
+      
+      // Add new suggestion to the top of the list, maintain last 10
+      setAiSuggestions(prev => [newSuggestion, ...prev].slice(0, 10));
+      setLastProcessedTime(currentTime);
     } catch (error) {
-      console.error('Error saving transcription:', error);
+      console.error('Error getting AI suggestions:', error);
     }
-  },
-});
+  };
+
+  // Poll for new suggestions every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (transcriptions.length > 0) {
+        getAISuggestions(transcriptions);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [transcriptions]);
+
+
+  // Function to check keywords in text
+  const checkKeywords = (text) => {
+    return keywords.map(kw => ({
+      ...kw,
+      isIncluded: text.toLowerCase().includes(kw.keyword.toLowerCase())
+    }));
+  };
+
+  // Effect for periodic keyword checking
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const combinedText = updateCombinedText(transcriptions);
+      const updatedKeywords = checkKeywords(combinedText);
+      setKeywords(updatedKeywords);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [transcriptions]);
+  useEffect(() => {
+    const fetchTranscriptionsAndSuggestions = async () => {
+      try {
+        const response = await fetch(`https://vultr-backend-server.onrender.com/api/transcription/${meetingidd}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setTranscriptions(data.data.transcriptions);
+          await getAISuggestions(data.data.transcriptions);
+        }
+      } catch (error) {
+        console.error('Error fetching transcriptions:', error);
+      }
+    };
+  
+    const interval = setInterval(() => {
+      if (activeCall) {
+        fetchTranscriptionsAndSuggestions();
+      }
+    }, 10000);
+  
+    return () => clearInterval(interval);
+  }, [activeCall, meetingidd]);
+
+  // In VideoConference.jsx, update the useTranscription hook implementation:
+
+  const { transcriptionEnabled, startTranscription, stopTranscription } = useTranscription({
+    isHost: true,
+    onTranscriptionUpdate: async (transcription) => {
+      try {
+        const text = transcription?.text?.text || transcription?.text || '';
+        
+        const transcriptionData = {
+          meetingId: meetingidd,
+          transcription: {
+            text: text,
+            timestamp: new Date().toISOString(),
+            speaker: 'representative'
+          }
+        };
+
+        const response = await fetch('https://vultr-backend-server.onrender.com/api/transcription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(transcriptionData)
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        setTranscriptions(prev => [...prev, transcriptionData.transcription]);
+      } catch (error) {
+        console.error('Error saving transcription:', error);
+      }
+    }
+  });
 
   const checkPermissions = async () => {
     try {
@@ -444,28 +569,41 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
     }
   };
 
-  const TranscriptionPanel = () => (
-    <div className="transcription-panel">
-      <h3>Live Transcription</h3>
-      <div className="transcription-messages">
-        {transcriptions.map((t, i) => (
-          <div key={i} className={`message ${t.isHost ? 'host' : 'consumer'}`}>
-            <div className="message-header">
-              <span className="timestamp">
-                {new Date(t.timestamp).toLocaleTimeString()}
-              </span>
-              <span className="speaker">
-                {t.isHost ? 'Representative' : 'Consumer'}
-              </span>
+  const KeywordPanel = () => (
+    <div className="keyword-panel">
+      {/* Keywords Section */}
+      <div className="keywords-section">
+        <h3>Topic Coverage</h3>
+        <div className="keyword-list">
+          {keywords.map((kw, index) => (
+            <div
+              key={index}
+              className={`keyword-item ${kw.isIncluded ? 'included' : 'not-included'}`}
+            >
+              <span>{kw.keyword}</span>
+              <span>{kw.isIncluded ? '✓' : '×'}</span>
             </div>
-            <div className="message-content">
-              {typeof t.text === 'object' ? t.text.text : t.text}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+      
+      {/* AI Suggestions Section */}
+      <div className="ai-suggestions-panel">
+        <h3>Real-time Coaching Tips</h3>
+        <ul className="suggestions-list">
+          {aiSuggestions.map((suggestion, index) => (
+            <li 
+              key={index} 
+              className={index === 0 ? 'latest-suggestion' : 'previous-suggestion'}
+            >
+              {suggestion}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
+
 
   return (
     <div className="video-conference">
@@ -581,8 +719,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
   ))}
 </div>
 )}
-
-<TranscriptionPanel />
+<KeywordPanel />
 </div>
 );
 };

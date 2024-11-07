@@ -369,3 +369,28 @@
 .text {
   word-wrap: break-word;
 }
+.keyword-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.keywords-section {
+  flex: 1;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.suggestions-section {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  background: #f3f4f6;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
