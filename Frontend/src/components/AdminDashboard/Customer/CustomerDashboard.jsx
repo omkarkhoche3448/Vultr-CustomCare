@@ -41,11 +41,10 @@ const CustomerDashboard = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    if (token) {
+    if (token && customers.length === 0) {
       dispatch(fetchCustomers(token));
     }
-  }, [dispatch, token]);
-
+  }, [dispatch, token, customers.length]);
 
   const handleUploadComplete = async () => {
     handleCloseModal();
@@ -88,9 +87,9 @@ const CustomerDashboard = () => {
       });
     }
   };
-
-  const handleRefresh = () => {
-    loadCustomers();
+  const handleRefresh = async () => {
+    localStorage.removeItem("customers");
+    dispatch(fetchCustomers(token));
   };
 
   const handleOpenModal = () => {

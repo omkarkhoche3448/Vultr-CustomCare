@@ -3,9 +3,6 @@ import {
   setLoading,
   setTasks,
   setError,
-  addTask as addTaskAction,
-  updateTask as updateTaskAction,
-  deleteTask as deleteTaskAction,
 } from "../../slices/taskSlice";
 import { apiConnector } from "../apiConnector";
 import { endpoints } from "../api";
@@ -18,87 +15,28 @@ const {
   GET_TASK_STATS_API,
 } = endpoints;
 
-const dummyTasks = [
-  {
-    _id: 1,
-    customerName: "Customer One",
-    projectTitle: "Project Alpha",
-    description: "Initial phase of Project Alpha.",
-    script: "Analyze the project requirements and create a basic blueprint.",
-    assignedTo: "John Doe",
-    status: "COMPLETED",
-    lastUpdated: "2024-10-31",
-    keywords: ["development", "frontend"],
-  },
-  {
-    _id: 2,
-    customerName: "Customer Two",
-    projectTitle: "Project Beta",
-    description: "Developing the user interface for Project Beta.",
-    script: "Create UI mockups and get client feedback.",
-    assignedTo: "Jane Smith",
-    status: "IN_PROGRESS",
-    lastUpdated: "2024-10-30",
-    keywords: ["UI/UX", "design"],
-  },
-  {
-    _id: 3,
-    customerName: "Customer Three",
-    projectTitle: "Project Gamma",
-    description: "Testing and deployment phase of Project Gamma.",
-    script: "Conduct final testing and prepare for deployment.",
-    assignedTo: "Alice Johnson",
-    status: "PENDING",
-    lastUpdated: "2024-10-29",
-    keywords: ["testing", "deployment"],
-  },
-  {
-    _id: 4,
-    customerName: "Customer Four",
-    projectTitle: "Project Delta",
-    description: "Initial planning and design for Project Delta.",
-    script: "Outline project goals and deliverables.",
-    assignedTo: "Mark Brown",
-    status: "COMPLETED",
-    lastUpdated: "2024-10-28",
-    keywords: ["planning", "strategy"],
-  },
-  {
-    _id: 5,
-    customerName: "Customer Five",
-    projectTitle: "Project Epsilon",
-    description: "Data analysis and reporting for Project Epsilon.",
-    script: "Gather data and create analytical reports.",
-    assignedTo: "Emma Wilson",
-    status: "IN_PROGRESS",
-    lastUpdated: "2024-10-27",
-    keywords: ["data", "analytics"],
-  },
-  {
-    _id: 6,
-    customerName: "Customer Six",
-    projectTitle: "Project Zeta",
-    description: "Final review and feedback for Project Zeta.",
-    script: "Collect feedback from stakeholders and finalize documentation.",
-    assignedTo: "Michael Davis",
-    status: "PENDING",
-    lastUpdated: "2024-10-26",
-    keywords: ["review", "feedback"],
-  },
-];
-
 // Fetch tasks with simulated API call
-export const fetchTasks = () => async (dispatch) => {
-  dispatch(setLoading(true)); // Set loading state to true
+export const fetchTasks = (token) => async (dispatch) => {
+  dispatch(setLoading(true));
 
   try {
-    // Simulate network delay with a timeout
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    dispatch(setTasks(dummyTasks)); // Dispatch the action to set tasks
+    // Fetch tasks from the server
+    const response = await fetch('/api/tasks', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch tasks');
+    }
+
+    const tasks = await response.json();
+    dispatch(setTasks(tasks));
   } catch (error) {
-    dispatch(setError(error.message)); // Dispatch error action if something goes wrong
+    dispatch(setError(error.message));
   } finally {
-    dispatch(setLoading(false)); // Reset loading state
+    dispatch(setLoading(false));
   }
 };
 // Create new task (Admin only)

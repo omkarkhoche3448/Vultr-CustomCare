@@ -43,7 +43,7 @@ const authSlice = createSlice({
       localStorage.removeItem("user");
       localStorage.removeItem("representatives"); 
       localStorage.removeItem("customers"); 
-      // localStorage.removeItem("tasks"); 
+      localStorage.removeItem("tasks"); 
     },
     clearError: (state) => {
       state.error = null;

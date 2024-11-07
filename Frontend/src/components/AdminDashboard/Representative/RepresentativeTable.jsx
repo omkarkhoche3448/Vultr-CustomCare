@@ -105,6 +105,10 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
     setIsModalOpen(false);
   };
 
+  const handleRefresh = () => {
+    // window.location.reload();
+  };
+
   const TableHeader = ({ label, sortKey }) => (
     <th
       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -139,7 +143,7 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
       {showFilterDropdown && (
         <div className="absolute top-full mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-1">
-            {["all","available","unavailable"].map((status) => (
+            {["all", "available", "unavailable"].map((status) => (
               <button
                 key={status}
                 onClick={() => {
@@ -235,6 +239,13 @@ const RepresentativeTable = ({ representatives: initialRepresentatives }) => {
             />
           </div>
           <FilterDropdown />
+          <button
+            onClick={handleRefresh}
+            className="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200"
+          >
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
         </div>
       </div>
 

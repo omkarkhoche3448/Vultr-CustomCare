@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { endpoints } from "../api";
 import { setCustomers } from "../../slices/customerSlice";
+import { setTasks, setError } from "../../slices/taskSlice";
 export const BASE_URL =
   typeof import.meta.env !== "undefined" && import.meta.env.VITE_BASE_URL
     ? import.meta.env.VITE_BASE_URL
@@ -17,108 +18,91 @@ const {
   UPLOAD_CSV_API,
 } = endpoints;
 
-// Service to create a new task
-export const createTask = async (taskData) => {
+export const createTask = async (taskData, token) => {
   const toastId = toast.loading("Creating task...");
   try {
-    const response = await axios.post(CREATE_TASK_API, taskData);
+    const response = await axios.post(CREATE_TASK_API, taskData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
     toast.success("Task created successfully!", { id: toastId });
-    console.log("Task created:", response.data);
-    return response.data; // Return the created task data
+    return response.data;
   } catch (error) {
     toast.error("Error creating task", { id: toastId });
-    console.error("Error creating task:", error);
-    throw error; // Rethrow the error for further handling
+    throw error;
   }
 };
 
-// Service to fetch all tasks
-export const fetchTasks = async () => {
-  const toastId = toast.loading("Fetching tasks...");
+export const fetchTasks = (token) => async (dispatch) => {
+  console.log("Fetching tasks...");
   try {
-    const response = await axios.get(GET_ADMIN_TASKS_API);
-    toast.success("Tasks fetched successfully!", { id: toastId });
-    console.log("Tasks fetched:", response.data);
-    return response.data; // Return the list of tasks
+    const response = await axios.get(GET_ADMIN_TASKS_API, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log("Task response:", response);
+    dispatch(setTasks(response.data));
+    return response.data;
   } catch (error) {
-    toast.error("Error fetching tasks", { id: toastId });
-    console.error("Error fetching tasks:", error);
-    throw error; // Rethrow the error for further handling
+    dispatch(setError("Failed to fetch tasks"));
+    throw error;
   }
 };
 
-// Service to fetch all representatives
 export const fetchRepresentatives = async (token) => {
-  console.log("Fetching representatives...");
-  const toastId = toast.loading("Fetching representatives...");
   try {
     const response = await axios.get(GET_REPRESENTATIVES_API, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    toast.success("Representatives fetched successfully!", { id: toastId });
-    console.log("Representatives fetched:", response.data);
-    window.location.reload();
     return response.data;
   } catch (error) {
-    toast.error("Error fetching representatives", { id: toastId });
-    console.error("Error fetching representatives:", error);
     throw error;
   }
 };
 
-// Service to fetch customers
 export const fetchCustomers =
   (token, filename = "customers.csv") =>
   async (dispatch) => {
-    console.log("Fetching customers...");
-    const toastId = toast.loading("Fetching customers...");
-
     try {
+      const storedCustomers = JSON.parse(localStorage.getItem("customers"));
+      if (storedCustomers?.length) {
+        dispatch(setCustomers(storedCustomers));
+        return storedCustomers;
+      }
+
       const response = await axios.get(GET_CUSTOMERS_API, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        params: {
-          filename,
-        },
+        params: { filename },
       });
 
       dispatch(setCustomers(response.data.data));
-      toast.success("Customer fetched successfully!", { id: toastId });
-      console.log("Customers fetched:", response.data.data);
+      localStorage.setItem("customers", JSON.stringify(response.data.data));
       return response.data;
     } catch (error) {
-      toast.error("Error fetching Customers", { id: toastId });
-      console.error("Error fetching Customers:", error);
+      throw error;
     }
   };
 
-// Service to upload a CSV file
 export const uploadCSV = async (csvFile, token, onProgress) => {
   const formData = new FormData();
   formData.append("file", csvFile);
 
-  const toastId = toast.loading("Uploading CSV...");
   try {
     const response = await axios.post(UPLOAD_CSV_API, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
       onUploadProgress: onProgress,
     });
-
-    toast.success("CSV uploaded successfully!", { id: toastId });
-    console.log("CSV uploaded:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Error uploading CSV:", error);
-    toast.error(error?.response?.data?.message || "Error uploading CSV", {
-      id: toastId,
-    });
     throw error;
   }
 };
@@ -234,11 +218,11 @@ export const fetchDeadlines = async () => {
   });
 };
 
-export const generateScript = async (description, task, GenaiToken) => {
-  console.log("Generating scriptS....");
+export const generateScript = async (description, task, GenaiToken, token) => {
+  console.log("Generating script....");
   try {
     const response = await axios.post(
-      `http://localhost:3000/api/admin/generate-script`,
+      `${BASE_URL}/api/admin/generate-script`,
       {
         description,
         task,
@@ -246,12 +230,11 @@ export const generateScript = async (description, task, GenaiToken) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GenaiToken}`,
+          Authorization: `Bearer ${token}`,
+          "genai-auth": GenaiToken,
         },
       }
     );
-
-    // return "This is a dummy generated script based on provided description and task.";
 
     if (response.data && response.data.script) {
       console.log("Script generated successfully.");
@@ -261,22 +244,15 @@ export const generateScript = async (description, task, GenaiToken) => {
     }
   } catch (error) {
     console.error("Script generation error:", error);
-    if (error.response) {
-      throw new Error(
-        error.response.data?.error || `Server error: ${error.response.status}`
-      );
-    } else if (error.request) {
-      throw new Error("No response received from server");
-    } else {
-      throw new Error(error.message || "Failed to generate script");
-    }
+    throw error;
   }
 };
 
-export const generateKeywords = async (script, task, GenaiToken) => {
+export const generateKeywords = async (script, task, GenaiToken, token) => {
+  console.log("Generating keywords...");
   try {
     const response = await axios.post(
-      `http://localhost:3000/api/admin/generate-keywords`,
+      `${BASE_URL}/api/admin/generate-keywords`,
       {
         script,
         task,
@@ -284,19 +260,26 @@ export const generateKeywords = async (script, task, GenaiToken) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GenaiToken}`,
+          Authorization: `Bearer ${token}`,
+          "genai-auth": GenaiToken,
         },
       }
     );
 
-    // return {
-    //   personalKeywords: ["dummyPersonalKeyword1", "dummyPersonalKeyword2"],
-    //   productKeywords: ["dummyProductKeyword1", "dummyProductKeyword2"],
-    // };
+    if (
+      !response.data["personal Keywords"] ||
+      !response.data["product keywords"]
+    ) {
+      throw new Error("Invalid keyword response format");
+    }
 
     return {
-      personalKeywords: response.data["personal Keywords"].split(", "),
-      productKeywords: response.data["product keywords"].split(", "),
+      personalKeywords: response.data["personal Keywords"]
+        .split(", ")
+        .filter((k) => k),
+      productKeywords: response.data["product keywords"]
+        .split(", ")
+        .filter((k) => k),
     };
   } catch (error) {
     console.error("Keyword generation error:", error);

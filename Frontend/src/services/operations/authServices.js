@@ -7,13 +7,13 @@ const { SIGNUP_API, LOGIN_API,SIGNUP_REPRESENTATIVE_API } = endpoints;
 
 export function signUp(userData) {
   return async (dispatch) => {
-    const toastId = toast.loading("Creating your account...");
+    const toastId = toast.loading("Creating your account..."); 
     dispatch(setLoading(true));
     
     try {
       const response = await apiConnector("POST", SIGNUP_API, userData);
-      
       console.log("Service Response:", response);
+      toast.success("Account created successfully!", { id: toastId }); 
       return response;
 
     } catch (error) {
@@ -25,12 +25,10 @@ export function signUp(userData) {
         "Failed to create account";
       
       dispatch(setError(errorMessage));
-      toast.error(errorMessage);
-      throw error;
+      toast.error(errorMessage, { id: toastId });
       
     } finally {
       dispatch(setLoading(false));
-      toast.dismiss(toastId);
     }
   };
 }
@@ -53,7 +51,7 @@ export function SignUpRepresentative(userData) {
       );
       
       console.log("Representative Signup Response:", response);
-            
+      toast.success("Representative account created successfully!", { id: toastId });
       return response;
 
     } catch (error) {
@@ -65,12 +63,10 @@ export function SignUpRepresentative(userData) {
         "Failed to create representative account";
       
       dispatch(setError(errorMessage));
-      toast.error(errorMessage);
-      throw error;
+      toast.error(errorMessage, { id: toastId });
       
     } finally {
       dispatch(setLoading(false));
-      toast.dismiss(toastId);
     }
   };
 }
@@ -81,28 +77,39 @@ export function signIn(credentials) {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
-    const response = await apiConnector("POST", LOGIN_API, credentials);
-    
-    // Check if we have both token and user in the response
-    if (response.data.token && response.data.user) {
-      const userData = {
-        user: {
-          id: response.data.user.id,
-          username: response.data.user.username,
-          email: response.data.user.email,
-          role: response.data.user.role
-        },
-        token: response.data.token
-      };
-
-      dispatch(setUser(userData));
-      toast.success("Welcome back!");
-      dispatch(setLoading(false));
-      toast.dismiss(toastId);
+    try {
+      const response = await apiConnector("POST", LOGIN_API, credentials);
       
-      return userData;
+      if (response.data.token && response.data.user) {
+        const userData = {
+          user: {
+            id: response.data.user.id,
+            username: response.data.user.username,
+            email: response.data.user.email,
+            role: response.data.user.role
+          },
+          token: response.data.token
+        };
+
+        dispatch(setUser(userData));
+        toast.success("Welcome back!", { id: toastId }); 
+        return userData;
+      }
+      
+    } catch (error) {
+      console.error("Login Error:", error);
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Failed to sign in";
+      
+      dispatch(setError(errorMessage));
+      toast.error(errorMessage, { id: toastId });
+      throw error;
+      
+    } finally {
+      dispatch(setLoading(false));
     }
-    
   };
 }
 

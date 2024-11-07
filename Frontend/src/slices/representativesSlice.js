@@ -1,22 +1,22 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const storedRepresentatives = JSON.parse(localStorage.getItem('representatives')) || [];
+const initialState = {
+  representatives: [],
+  loading: false,
+  error: null,
+};
 
 const representativesSlice = createSlice({
   name: 'representatives',
-  initialState: {
-    representatives: storedRepresentatives, 
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
+    setRepresentatives(state, action) {
+      state.representatives = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
     setLoading(state) {
       state.loading = true;
-    },
-    setRepresentatives(state, action) {
-      state.loading = false;
-      state.representatives = action.payload;
-      localStorage.setItem('representatives', JSON.stringify(action.payload));
     },
     setError(state, action) {
       state.loading = false;
@@ -25,5 +25,5 @@ const representativesSlice = createSlice({
   },
 });
 
-export const { setLoading, setRepresentatives, setError } = representativesSlice.actions;
+export const { setRepresentatives, setLoading, setError } = representativesSlice.actions;
 export default representativesSlice.reducer;

@@ -26,7 +26,7 @@ const AdminHome = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen  bg-gray-50">
       <div className="p-6">
         <DashboardHeader />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -63,9 +63,8 @@ const AdminHome = () => {
             </>
           )}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1  gap-6">
           <RecentTasks recentActivity={recentActivity} />
-          <UpcomingDeadlines deadlines={deadlines} />
         </div>
       </div>
     </div>
@@ -176,7 +175,7 @@ const RecentTasks = ({ recentActivity }) => {
   );
 
   return (
-    <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg">
+    <div className="w-full bg-white border border-gray-200 rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Recent Tasks</h2>
       </div>
@@ -237,53 +236,6 @@ const RecentTasks = ({ recentActivity }) => {
             onPageChange={setCurrentPage}
           />
         </div>
-      </div>
-    </div>
-  );
-};
-
-const UpcomingDeadlines = ({ deadlines }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
-  const totalPages = Math.ceil(deadlines.length / itemsPerPage);
-
-  const paginatedDeadlines = deadlines.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Upcoming Deadlines
-        </h2>
-      </div>
-      <div className="p-6">
-        <div className="space-y-4">
-          {paginatedDeadlines.map((deadline, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
-            >
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{deadline.title}</p>
-                <p className="text-sm text-gray-600">{deadline.due}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          totalItems={deadlines.length}
-          onPageChange={setCurrentPage}
-        />
       </div>
     </div>
   );

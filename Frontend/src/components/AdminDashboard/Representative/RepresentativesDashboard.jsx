@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Modal from "../Modal";
 import RepresentativeTable from "./RepresentativeTable";
 import CreateRepresentativeForm from "./CreateRepresentativeForm";
 import StatsGrid from "./StatsGrid";
@@ -10,6 +9,8 @@ import {
   setRepresentatives,
   setError,
 } from "../../../slices/representativesSlice";
+import Modal from "../Modal";
+
 
 const RepresentativesDashboard = () => {
   const dispatch = useDispatch();
@@ -18,41 +19,32 @@ const RepresentativesDashboard = () => {
   );
   const { token } = useSelector((state) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const loadRepresentatives = async () => {
+    try {
+      dispatch(setLoading(true));
+      const reps = await fetchRepresentatives(token);
+      dispatch(setRepresentatives(reps));
+      localStorage.setItem("representatives", JSON.stringify(reps));
+    } catch (err) {
+      dispatch(setError("Failed to fetch representatives"));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  useEffect(() => {
+    if (representatives.length === 0) {
+      loadRepresentatives();
+    }
+  }, [token]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     skillset: "Customer Support",
     status: "Available",
   });
-  useEffect(() => {
-    const loadRepresentatives = async () => {
-      if (representatives.length === 0) {
-        try {
-          dispatch(setLoading(true)); 
-
-          const storedRepresentatives = JSON.parse(
-            localStorage.getItem("representatives")
-          );
-
-          if (storedRepresentatives && storedRepresentatives.length > 0) {
-        
-            dispatch(setRepresentatives(storedRepresentatives));
-          } else {
-           
-            const reps = await fetchRepresentatives(token);
-            dispatch(setRepresentatives(reps)); 
-            localStorage.setItem("representatives", JSON.stringify(reps));
-          }
-        } catch (err) {
-          dispatch(setError("Failed to fetch representatives"));
-        } finally {
-          dispatch(setLoading(false)); 
-        }
-      }
-    };
-
-    loadRepresentatives(); 
-  }, [token, dispatch, representatives.length]); 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,9 +54,9 @@ const RepresentativesDashboard = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(setRepresentatives([...representatives, formData]));
+    await loadRepresentatives();
     setFormData({
       name: "",
       email: "",

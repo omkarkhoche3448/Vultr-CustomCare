@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Select from "react-select";
 import {
   X,
@@ -17,8 +17,9 @@ import {
   generateKeywords,
 } from "../../../services/operations/adminServices";
 import { toast } from "react-hot-toast";
+import { createTask } from "../../../services/operations/adminServices";
 
-const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT 
+const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT;
 
 const TaskForm = ({
   task = {},
@@ -27,8 +28,23 @@ const TaskForm = ({
   onCancel,
   isUpdate = false,
   customers = [],
-  handle
+  handle,
 }) => {
+  // console.log('Customers received:', customers);
+  const defaultValues = {
+    category: task?.category || "",
+    customers: task?.customers || [],
+    projectTitle: task?.projectTitle || "",
+    description: task?.description || "",
+    script: task?.script || "",
+    keywords: task?.keywords || [],
+    assignedMembers: task?.assignedMembers || [],
+    status: task?.status || "PENDING",
+    priority: task?.priority || "Medium",
+    assignedDate: task?.assignedDate || new Date().toISOString().split("T")[0],
+    dueDate: task?.dueDate || "",
+  };
+
   const {
     register,
     handleSubmit,
@@ -38,21 +54,10 @@ const TaskForm = ({
     watch,
     getValues,
   } = useForm({
-    defaultValues: {
-      category: task.category || "",
-      customers: task.customers || [],
-      projectTitle: task.projectTitle || "",
-      description: task.description || "",
-      script: task.script || "",
-      keywords: task.keywords || [],
-      assignedMembers: task.assignedMembers || [],
-      status: task.status || "pending",
-      priority: task.priority || "Medium",
-      assignedDate: task.assignedDate || new Date().toISOString().split('T')[0], 
-      dueDate: task.dueDate || "", 
-    },
+    defaultValues,
+    mode: "onChange",
   });
-
+  const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
   const [currentKeyword, setCurrentKeyword] = useState("");
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
@@ -68,21 +73,32 @@ const TaskForm = ({
   const selectedCustomers = watch("customers");
 
   const categoryOptions = React.useMemo(() => {
-    const uniqueCategories = [...new Set(customers.map(customer => customer.category))];
-    
+    const uniqueCategories = [
+      ...new Set(customers.map((customer) => customer.category)),
+    ];
+
     return uniqueCategories
       .sort((a, b) => a.localeCompare(b))
-      .map(category => ({
+      .map((category) => ({
         value: category.toLowerCase(),
-        label: category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
+        label:
+          category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(),
       }));
-  }, [customers])
+  }, [customers]);
 
   // Transform customers into Select options with additional info
   const customerOptions = availableCustomers.map((customer) => ({
     value: customer.id,
-    label: `${customer.name} - ${customer.email} - ${customer.productDemand}`,
-    customer: customer,
+    label: `${customer.customername || "No Name"} - ${
+      customer.email || "No Email"
+    } - ${customer.productdemand || "No Product"}`,
+    customer: {
+      id: customer.id,
+      name: customer.customername,
+      email: customer.email,
+      productDemand: customer.productdemand,
+      category: customer.category,
+    },
   }));
 
   // New function to handle select all customers
@@ -136,7 +152,6 @@ const TaskForm = ({
       }));
       setValue("customers", selectedCustomerData);
 
-      // Update select all checkbox state
       setSelectAllChecked(selectedOptions.length === availableCustomers.length);
     } else {
       setValue("customers", []);
@@ -144,58 +159,68 @@ const TaskForm = ({
     }
   };
 
-  // Rest of the existing functions remain the same
   const handleGenerateScript = async () => {
+    if (!GenaiToken || !token) {
+      toast.error("Authentication tokens missing");
+      return;
+    }
+
+    const description = watch("description");
+
     if (!description) {
-      setError("Description is required to generate script");
+      toast.error("Description is required to generate script");
       return;
     }
 
     setIsGeneratingScript(true);
-    setError("");
-
     try {
       const generatedScript = await generateScript(
         description,
         "based on the above context, write me a script that I will use to convince the customer to purchase my product",
-        GenaiToken
+        GenaiToken,
+        token
       );
 
-      const cleanedScript = generatedScript
-        .trim()
-        .replace(/\s+/g, " ")
-        .replace(/\"/g, "");
-
-      setValue("script", cleanedScript);
+      if (generatedScript) {
+        setValue("script", generatedScript.trim());
+        toast.success("Script generated successfully");
+      }
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message || "Failed to generate script");
     } finally {
       setIsGeneratingScript(false);
     }
   };
 
   const handleGenerateKeywords = async () => {
+    if (!GenaiToken || !token) {
+      toast.error("Authentication tokens missing");
+      return;
+    }
+
+    const script = watch("script");
+
     if (!script) {
-      setError("Script is required to generate keywords");
+      toast.error("Script is required to generate keywords");
       return;
     }
 
     setIsGeneratingKeywords(true);
-    setError("");
-
     try {
       const { personalKeywords, productKeywords } = await generateKeywords(
         script,
         "Extract keywords from this script",
-        GenaiToken
+        GenaiToken,
+        token
       );
 
       const newKeywords = [
         ...new Set([...keywords, ...personalKeywords, ...productKeywords]),
       ];
       setValue("keywords", newKeywords);
+      toast.success("Keywords generated successfully");
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message || "Failed to generate keywords");
     } finally {
       setIsGeneratingKeywords(false);
     }
@@ -216,20 +241,37 @@ const TaskForm = ({
     );
   };
 
-  const memberOptions = teamMembers.map((member) => ({
-    value: member,
-    label: (
-      <div className="flex items-center gap-2">
-        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-          <UserCircle className="w-4 h-4 text-blue-600" />
+  const validateDates = {
+    validate: {
+      futureDate: (value) => {
+        if (!value) return true;
+        const today = new Date().toISOString().split("T")[0];
+        return value >= today || "Date cannot be in the past";
+      },
+      dueAfterAssigned: (value) => {
+        if (!value) return true;
+        const assignedDate = getValues("assignedDate");
+        return value >= assignedDate || "Due date must be after assigned date";
+      },
+    },
+  };
+
+  // console.log( "teamMembers",teamMembers[0].skillset)
+  const memberOptions =
+    teamMembers?.map((member) => ({
+      value: member,
+      label: (
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+            <UserCircle className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">{member?.name}</p>
+            <p className="text-xs text-gray-500">{member?.skillset}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium">{member.name}</p>
-          <p className="text-xs text-gray-500">{member.role}</p>
-        </div>
-      </div>
-    ),
-  }));
+      ),
+    })) || [];
 
   const priorityOptions = [
     { value: "High", label: "High" },
@@ -237,8 +279,26 @@ const TaskForm = ({
     { value: "Low", label: "Low" },
   ];
 
-  const onSubmitForm = (data) => {
-    onSubmit(data);
+  const onSubmitForm = async (data) => {
+    try {
+      const taskData = {
+        ...data,
+        assignedMembers: data.assignedMembers.map((member) => ({
+          id: member.id,
+          name: member.name,
+        })),
+        status: "PENDING",
+        createdAt: new Date().toISOString(),
+      };
+
+      await createTask(taskData, token);
+      toast.success("Task created successfully!");
+      onSubmit(taskData);
+      onCancel();
+    } catch (error) {
+      toast.error("Failed to create task");
+      console.error("Failed to create task:", error);
+    }
   };
 
   useEffect(() => {
@@ -248,13 +308,14 @@ const TaskForm = ({
   }, [error]);
 
   useEffect(() => {
+    // console.log('Available customers:', customers);
     setAvailableCustomers(customers);
   }, [customers]);
 
   return (
     <div>
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmitForm)}
         className="flex flex-col h-full max-h-[calc(100vh-8rem)]"
       >
         <div className="flex-1 overflow-y-auto p-6">
@@ -588,21 +649,56 @@ const TaskForm = ({
                 name="assignedMembers"
                 control={control}
                 rules={{ required: "Please assign at least one team member" }}
-                render={({ field }) => (
+                render={({ field: { onChange, value } }) => (
                   <Select
-                    {...field}
                     isMulti
-                    options={memberOptions}
-                    value={memberOptions.filter((option) =>
-                      field.value.some(
-                        (member) => member.id === option.value.id
+                    options={teamMembers.map((member) => ({
+                      value: member.id,
+                      label: (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <UserCircle className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{member.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {member.skillset}
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                      member: member,
+                    }))}
+                    value={teamMembers
+                      .filter((member) =>
+                        value?.some(
+                          (selectedMember) => selectedMember.id === member.id
+                        )
                       )
-                    )}
-                    onChange={(selected) =>
-                      field.onChange(
-                        selected ? selected.map((option) => option.value) : []
-                      )
-                    }
+                      .map((member) => ({
+                        value: member.id,
+                        label: (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                              <UserCircle className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {member.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {member.skillset}
+                              </p>
+                            </div>
+                          </div>
+                        ),
+                        member: member,
+                      }))}
+                    onChange={(selected) => {
+                      onChange(
+                        selected ? selected.map((option) => option.member) : []
+                      );
+                    }}
                     className="react-select-container"
                     classNamePrefix="react-select"
                     placeholder="Select team members..."
@@ -629,6 +725,7 @@ const TaskForm = ({
               )}
             </div>
           </div>
+          
         </div>
 
         {/* Submit Button */}

@@ -35,16 +35,16 @@ export default function SignIn() {
     };
   }, [token, user, navigate, dispatch]);
 
-  const onSubmit = async (data) => {
-    try {
-      const result = await dispatch(signIn(data));
-      if (result?.user) {
-        console.log("Login successful");
-      }
-    } catch (error) {
-      console.error("SignIn component error:", error);
+const onSubmit = async (data) => {
+  try {
+    const result = await dispatch(signIn(data));
+    if (result?.user) {
+      console.log("Login successful");
     }
-  };
+  } catch (error) {
+    console.error("SignIn component error:", error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4">

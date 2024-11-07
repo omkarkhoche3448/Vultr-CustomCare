@@ -7,12 +7,14 @@ import representativesReducer from "./slices/representativesSlice";
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    task:  taskReducer,
+    task: taskReducer,
     customers: customerReducer, 
     representatives: representativesReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({ serializableCheck: false }),
+    getDefaultMiddleware({
+      serializableCheck: false,
+    })
 });
 
 export default store;
