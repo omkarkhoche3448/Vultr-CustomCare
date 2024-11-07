@@ -1,8 +1,5 @@
 // Setting BASE_URL with a fallback to localhost if the environment variable is not available
-export const BASE_URL =
-  typeof import.meta.env !== "undefined" && import.meta.env.VITE_BASE_URL
-    ? import.meta.env.VITE_BASE_URL
-    : "http://localhost:3000";
+export const BASE_URL = import.meta.env.VITE_BASE_URL ?? "http://localhost:3000";
 
 export const endpoints = {
   // Auth endpoints
@@ -31,4 +28,7 @@ export const endpoints = {
   GET_USERS_CALL_LIST: `${BASE_URL}/api/users/call-list`,
   SEND_EMAILS_TO_USER: `${BASE_URL}/api/users/send-email`, // done
   CALL_COMPLETION: `${BASE_URL}/api/call/completion`,
+
+
+  GET_REP_TASKS_API: `${BASE_URL}/api/representative/assigned-tasks`,
 };

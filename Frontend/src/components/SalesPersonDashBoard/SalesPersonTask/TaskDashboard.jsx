@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTasks } from '../../../services/operations/adminServices';
+import { fetchRepresentativeTasks } from '../../../services/operations/representativeServices';
 import { formatDistance } from 'date-fns';
 
 const StatusBadge = ({ status }) => {
@@ -24,13 +25,16 @@ const TaskDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token); // Add this line
   const tasks = useSelector(state => state.task.tasks);
   const loading = useSelector(state => state.task.loading);
   const error = useSelector(state => state.task.error);
 
   useEffect(() => {
-    dispatch(fetchTasks());
-  }, [dispatch]);
+    if (token) {
+      dispatch(fetchRepresentativeTasks(token));
+    }
+  }, [dispatch, token]);
 
   const handleStatusChange = (e) => {
     setStatusFilter(e.target.value);
