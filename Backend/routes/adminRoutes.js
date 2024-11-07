@@ -11,10 +11,12 @@ vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
 router.post('/create-task', authenticate, authorizeAdmin, adminController.createTask);
 
 // Route to fetch all representatives
-router.get('/representatives', authenticate, authorizeAdmin, adminController.getRepresentatives);
+// router.get('/representatives', authenticate, authorizeAdmin, adminController.getRepresentatives);
+router.get('/representatives', adminController.getRepresentatives);
 
 // Route to fetch tasks
-router.get('/tasks', authenticate, authorizeAdmin, adminController.fetchTasks);
+// router.get('/tasks', authenticate, authorizeAdmin, adminController.fetchTasks);
+router.get('/tasks',  adminController.fetchTasks);
 
     
 // Route to upload CSV
@@ -26,7 +28,8 @@ router.post('/upload-csv', authenticate, authorizeAdmin, upload.single('file'), 
 
 
 // Route to get customer data from uploaded CSV
-router.get('/customers', authenticate, authorizeAdmin, adminController.getCustomerData);
+// router.get('/customers', authenticate, authorizeAdmin, adminController.getCustomerData);
+router.get('/customers',  adminController.getCustomerData);
 
 // Middleware to check GenAI authorization header
 const checkGenAIToken = (req, res, next) => {
