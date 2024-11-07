@@ -10,57 +10,28 @@ vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
 
 const axios = require("axios");
 
-// const createTask = async (req, res) => {
-//   const { customerName, projectTitle, description, script, keywords } = req.body;
-
-//   if (!customerName || !projectTitle || !description || !script) {
-//     return res.status(400).json({ message: 'All fields are required' });
-//   }
-
-//   const taskId = uuidv4();
-//   const taskData = {
-//     taskId,
-//     customerName,
-//     projectTitle,
-//     description,
-//     script,
-//     keywords,
-//   };
-
-//   const params = {
-//     Bucket: task_bucket,
-//     Key: `tasks/${taskId}.json`,
-//     Body: JSON.stringify(taskData),
-//     ContentType: 'application/json',
-//   };
-
-//   try {
-//     await vultrConfig.upload(params).promise();
-//     res.status(201).json({ message: 'Task created successfully', taskId });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Failed to create task' });
-//   }
-// };
-
-const assignTask = async (req, res) => {
+const createTask  = async (req, res) => {
   const {
     category,
-    customerNames,
-    title,
+    customers,
+    projectTitle,
     description,
     script,
     keywords,
-    teamMembers,
+    assignedMembers,
+    status,
+    priority,
+    assignedDate,
+    dueDate,
   } = req.body;
 
   if (
     !category ||
-    !customerNames ||
-    !title ||
+    !customers ||
+    !projectTitle ||
     !description ||
     !script ||
-    !teamMembers
+    !assignedMembers
   ) {
     return res
       .status(400)
@@ -71,14 +42,18 @@ const assignTask = async (req, res) => {
   const taskData = {
     taskId,
     category,
-    customerNames: Array.isArray(customerNames)
-      ? customerNames
-      : [customerNames],
-    title,
+    customers: Array.isArray(customers) ? customers : [customers],
+    projectTitle,
     description,
     script,
     keywords,
-    teamMembers: Array.isArray(teamMembers) ? teamMembers : [teamMembers],
+    assignedMembers: Array.isArray(assignedMembers)
+      ? assignedMembers
+      : [assignedMembers],
+    status: status || "pending",
+    priority,
+    assignedDate,
+    dueDate,
     createdAt: new Date().toISOString(),
   };
 
@@ -458,8 +433,7 @@ const generate_keywords = async (req, res) => {
 };
 
 module.exports = {
-  // createTask,
-  assignTask,
+  createTask ,
   getRepresentatives,
   fetchTasks,
   uploadCSV,

@@ -16,7 +16,7 @@ router.get('/representatives', authenticate, authorizeAdmin, adminController.get
 // Route to fetch tasks
 router.get('/tasks', authenticate, authorizeAdmin, adminController.fetchTasks);
 
-
+    
 // Route to upload CSV
 // Set up multer for file handling
 const multer = require('multer');
@@ -60,11 +60,11 @@ description
     ├── Multiple specs of the product
 */
 
-router.post('/generate-script', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_script);
+// router.post('/generate-script', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_script);
+router.post('/generate-script', authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_script);
 
 // route to get the keywords from the script
 
-router.get('/generate-keywords', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_keywords);
-
+router.post('/generate-keywords', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_keywords);
 
 module.exports = router;
