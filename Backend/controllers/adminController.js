@@ -107,11 +107,11 @@ const getRepresentatives = async (req, res) => {
     Prefix: "users/",
   };
 
-  console.log("Fetching users from bucket with params:", params);
+  // console.log("Fetching users from bucket with params:", params);
 
   try {
     const usersList = await vultrConfig.listObjectsV2(params).promise();
-    console.log("Fetched user list:", usersList);
+    // console.log("Fetched user list:", usersList);
 
     const representatives = await Promise.all(
       usersList.Contents.map(async (file) => {
@@ -211,7 +211,7 @@ const uploadCSV = async (req, res) => {
       .pipe(csv())
       .on("data", (data) => results.push(data))
       .on("end", () => {
-        console.log("Parsed CSV data:", results);
+        // console.log("Parsed CSV data:", results);
         res.status(201).json({
           message: "CSV uploaded and processed successfully",
           data: results,

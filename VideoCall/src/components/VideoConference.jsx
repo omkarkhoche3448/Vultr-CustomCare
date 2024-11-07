@@ -64,7 +64,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       
       // Format the transcription data
       const transcriptionData = {
-        meetingId: meetingidd,
+        meetingId: activeCall?.meetingId,
         transcription: {
           text: text,
           timestamp: new Date().toISOString(),
@@ -247,7 +247,6 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       setRemoteUsers({});
       setActiveCall(null);
       stopTranscription();
-      setMeetingidd((Math.random().toString(36).substring(7)));
     } catch (error) {
       console.error('Error leaving channel:', error);
     }
@@ -398,7 +397,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
   
       const channelName = `${CHANNEL_PREFIX}${Date.now()}`;
       const token = await generateAgoraToken(channelName);
-      const meetingId = meetingidd;
+      const meetingId = Math.random().toString(36).substring(7);
       setMeetingidd(meetingId);
       const encodedToken = encodeURIComponent(token);
       // Add meetingId to the URL

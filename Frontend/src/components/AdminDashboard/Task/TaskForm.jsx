@@ -18,6 +18,8 @@ import {
 } from "../../../services/operations/adminServices";
 import { toast } from "react-hot-toast";
 
+const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT 
+
 const TaskForm = ({
   task = {},
   teamMembers = [],
@@ -156,7 +158,7 @@ const TaskForm = ({
       const generatedScript = await generateScript(
         description,
         "based on the above context, write me a script that I will use to convince the customer to purchase my product",
-        token
+        GenaiToken
       );
 
       const cleanedScript = generatedScript
@@ -184,7 +186,8 @@ const TaskForm = ({
     try {
       const { personalKeywords, productKeywords } = await generateKeywords(
         script,
-        "Extract keywords from this script"
+        "Extract keywords from this script",
+        GenaiToken
       );
 
       const newKeywords = [
