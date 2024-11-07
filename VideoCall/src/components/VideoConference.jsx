@@ -40,7 +40,7 @@ const VideoConference = () => {
   const updateTranscription = async (transcription) => {
     if (activeCall && activeCall.meetingId) {
       try {
-        await axios.post('http://localhost:5000/api/transcription', {
+        await axios.post('https://vultr-backend-server.onrender.com/api/transcription', {
           meetingId: meetingidd,
           transcription: {
             timestamp: transcription.timestamp,
@@ -75,7 +75,7 @@ const { transcriptionEnabled, startTranscription, stopTranscription } = useTrans
       console.log('[Representative] Sending transcription:', transcriptionData);
 
       // Send to backend API
-      const response = await fetch('http://localhost:5000/api/transcription', {
+      const response = await fetch('https://vultr-backend-server.onrender.com/api/transcription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

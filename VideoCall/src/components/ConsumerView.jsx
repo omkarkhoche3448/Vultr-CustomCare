@@ -38,7 +38,7 @@ const ConsumerView = () => {
   
         console.log('[Consumer] Sending transcription:', transcriptionData);
   
-        const response = await fetch('http://localhost:5000/api/transcription', {
+        const response = await fetch('https://vultr-backend-server.onrender.com/api/transcription', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -403,20 +403,6 @@ const ConsumerView = () => {
           ))}
         </div>
       )}
-
-      <div
-        style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          padding: '8px',
-          background: socketReady ? '#4CAF50' : '#f44336',
-          color: 'white',
-          borderRadius: '4px'
-        }}
-      >
-        Socket Status: {socketReady ? 'Connected' : 'Disconnected'}
-      </div>
     </div>
   );
 };
