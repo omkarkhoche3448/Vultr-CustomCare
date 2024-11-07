@@ -1,6 +1,6 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const dotenv = require('dotenv');
 
@@ -13,12 +13,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Constants from your configuration
-const PORT = process.env.PORT || 5000;
+// Constants
+const PORT = process.env.PORT || 3000;
 const APP_ID = '0d93673aec684720b9126be9fbd575ae';
 const APP_CERTIFICATE = '33f9a027a70f48bab96ba233ea13781f';
 
-// Endpoint to generate token
+// MongoDB Connection
+mongoose.connect('mongodb+srv://root:admin@meetingtranscriptiondat.klfp4.mongodb.net/MeetingTranscriptionData', {})
+  .then(() => console.log("Connected to MongoDB"))
+  .catch(err => console.error("Failed to connect to MongoDB", err));
+
+// MongoDB Schema
+const meetingTranscriptionSchema = new mongoose.Schema({
+  meetingId: String,
+  transcriptions: [{
+    timestamp: String,
+    text: String,
+    speaker: String
+  }]
+});
+
+const MeetingTranscription = mongoose.model('MeetingTranscription', meetingTranscriptionSchema);
+
+// Routes
+
+// Generate Agora token
 app.post('/api/generate-token', async (req, res) => {
   try {
     const { channelName, role = 'publisher', uid = 0 } = req.body;
@@ -27,13 +46,9 @@ app.post('/api/generate-token', async (req, res) => {
       return res.status(400).json({ error: 'Channel name is required' });
     }
 
-    // Set token expiry time (1 hour from now)
     const expirationTimeInSeconds = Math.floor(Date.now() / 1000) + 3600;
-
-    // Set role
     const userRole = role === 'publisher' ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
 
-    // Generate token
     const token = RtcTokenBuilder.buildTokenWithUid(
       APP_ID,
       APP_CERTIFICATE,
@@ -44,7 +59,6 @@ app.post('/api/generate-token', async (req, res) => {
     );
     console.log(token);
 
-    // Send response
     res.json({
       token,
       channelName,
@@ -58,12 +72,83 @@ app.post('/api/generate-token', async (req, res) => {
   }
 });
 
+// Save transcription
+app.post('/api/transcription', async (req, res) => {
+  try {
+    const { meetingId, transcription } = req.body;
+    
+    let meetingTranscription = await MeetingTranscription.findOne({ meetingId });
+    
+    if (meetingTranscription) {
+      meetingTranscription.transcriptions.push({
+        timestamp: transcription.timestamp,
+        text: transcription.text,
+        speaker: transcription.speaker
+      });
+      await meetingTranscription.save();
+    } else {
+      meetingTranscription = await MeetingTranscription.create({
+        meetingId,
+        transcriptions: [{
+          timestamp: transcription.timestamp,
+          text: transcription.text,
+          speaker: transcription.speaker
+        }]
+      });
+    }
+    
+    res.status(200).json({ message: "Transcription updated successfully" });
+  } catch (error) {
+    console.error('Error saving transcription:', error);
+    res.status(500).json({ error: "Error saving transcription" });
+  }
+});
+// Get meeting transcriptions by meetingId
+app.get('/api/transcription/:meetingId', async (req, res) => {
+  try {
+    const { meetingId } = req.params;
+    
+    // Validate meetingId
+    if (!meetingId) {
+      return res.status(400).json({ error: 'Meeting ID is required' });
+    }
+
+    // Find meeting transcription document
+    const meetingTranscription = await MeetingTranscription.findOne({ meetingId });
+    
+    // If no meeting found with the provided ID
+    if (!meetingTranscription) {
+      return res.status(404).json({ 
+        error: 'Meeting not found',
+        meetingId 
+      });
+    }
+
+    // Return the full meeting transcription object
+    res.status(200).json({
+      success: true,
+      data: meetingTranscription
+    });
+
+  } catch (error) {
+    console.error('Error fetching meeting transcription:', error);
+    res.status(500).json({ 
+      error: "Error fetching meeting transcription",
+      message: error.message 
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
+}); 
