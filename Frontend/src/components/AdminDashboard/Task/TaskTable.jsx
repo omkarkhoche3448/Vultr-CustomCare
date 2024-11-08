@@ -143,6 +143,7 @@ const TaskTable = ({
     }));
   };
 
+  console.log("TaskFor Table: ", tasks);
   return (
     <div className="space-y-4">
       {/* Search and Filter Controls */}
@@ -266,7 +267,8 @@ const TaskTable = ({
                             {task.projectTitle}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {task.keywords?.join(", ")}
+                            {task.keywords?.slice(0, 3).join(", ")}
+                            {task.keywords?.length > 3 && ", ..."}
                           </div>
                         </div>
                       </div>

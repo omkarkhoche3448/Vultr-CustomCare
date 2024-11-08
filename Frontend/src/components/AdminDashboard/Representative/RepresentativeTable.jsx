@@ -26,11 +26,12 @@ import Loader from "../Loader";
 
 const RepresentativeTable = () => {
   const dispatch = useDispatch();
-  const { representatives, error } = useSelector(
-    (state) => state.representatives
-  );
+  // const { representatives, error } = useSelector(
+  //   (state) => state.representatives
+  // );
 
-  const [representative, setRepresentative] = useState(representatives);
+  const [representative, setRepresentative] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { token } = useSelector((state) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRepresentative, setSelectedRepresentative] = useState(null);
@@ -67,7 +68,7 @@ const RepresentativeTable = () => {
     }
     setSortConfig({ key, direction });
 
-    const sortedData = [...representatives].sort((a, b) => {
+    const sortedData = [...representative].sort((a, b) => {
       if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
       if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
       return 0;
@@ -76,7 +77,7 @@ const RepresentativeTable = () => {
     setRepresentatives(sortedData);
   };
 
-  const filteredData = representatives.filter((rep) => {
+  const filteredData = representative.filter((rep) => {
     const matchesSearch =
       rep.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rep.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -91,6 +92,7 @@ const RepresentativeTable = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
 
   const skillsetOptions = [
     { value: "Customer Support", label: "Customer Support" },
@@ -135,7 +137,8 @@ const RepresentativeTable = () => {
 
   const handleRefresh = async () => {
     try {
-      await dispatch(fetchRepresentatives(token));
+      const data = await fetchRepresentatives(token);
+      setRepresentative(data);
       setCurrentPage(1);
       toast.success("Data refreshed successfully");
     } catch (error) {
@@ -404,6 +407,7 @@ const RepresentativeTable = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
+            {console.log("paginatedData",paginatedData)}
               {paginatedData.length == 0 ? (
                 <tr>
                   <td
