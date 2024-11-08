@@ -1,28 +1,20 @@
 import { useState, useEffect } from "react";
-import { useDispatch } from 'react-redux';
+import { useDispatch } from "react-redux";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import SalespersonSidebar from "./SalespersonSidebar";
 import CallList from "./Calling/CallList";
 import TaskDashboard from "./SalesPersonTask/TaskDashboard";
-import RepresentativeTaskDashboard from  "./RepresentativeTask/RepresentativeTaskDashboard";
-
-import DashboardHeader from './DashboardHeader';
-import {logout} from  "../../services/operations/authServices"
-
-
-const UsersContent = () => (
-  <div>
-    <h2>Users Management</h2>
-  </div>
-);
-
+import RepresentativeTaskDashboard from "./RepresentativeTask/RepresentativeTaskDashboard";
+import CustomerTracking from "./Customer/CustomerTracking";
+import DashboardHeader from "./DashboardHeader";
+import { logout } from "../../services/operations/authServices";
 
 // Define routes and their corresponding components and IDs
 const routeConfig = {
   tasks: { id: 1, component: TaskDashboard },
   calls: { id: 2, component: CallList },
   schedule: { id: 3, component: RepresentativeTaskDashboard },
-  users: { id: 4, component: UsersContent },
+  users: { id: 4, component: CustomerTracking },
 };
 
 // Reverse mapping for getting route from ID
@@ -71,7 +63,7 @@ export default function SalespersonDashboard() {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/signin');
+    navigate("/signin");
   };
 
   const CurrentContent =
@@ -85,7 +77,6 @@ export default function SalespersonDashboard() {
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-
         <DashboardHeader
           title="DynamicDialers"
           titleColor={"text-purple-600"}
