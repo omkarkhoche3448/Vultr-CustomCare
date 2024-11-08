@@ -1,0 +1,6 @@
+id,name,productDemand,category,email
+cust_201,Steve Jobs,High-Performance CPU for Data Analysis,CPU, steve.jobs@apple.com
+cust_202,Tim Cook,Workstation CPU for Software Development,CPU, tim.cook@apple.com
+cust_203,Bill Gates,Multi-Core CPU for Cloud Infrastructure,CPU, bill.gates@microsoft.com
+cust_204,Sheryl Sandberg,CPU Resources for Web Hosting,CPU, sheryl.sandberg@facebook.com
+cust_205,Larry Page,High-Speed CPU for Big Data Processing,CPU, larry.page@google.com
