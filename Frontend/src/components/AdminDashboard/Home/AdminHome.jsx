@@ -44,7 +44,7 @@ const AdminHome = () => {
     }
   }, [token, dispatch]);
 
-  console.log("recentTasks:", recentTasks);
+  // console.log("recentTasks:", recentTasks);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +55,7 @@ const AdminHome = () => {
         const sortedActivities = [...recentTasks].sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
-        console.log("sortedActivities:", sortedActivities);
+        // console.log("sortedActivities:", sortedActivities);
         setRecentActivity(sortedActivities);
 
         const deadlinesData = await fetchDeadlines();

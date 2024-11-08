@@ -9,6 +9,7 @@ import {
   fetchTasks,
 } from "../../../services/operations/adminServices";
 import Loader from "../Loader";
+import { setTasks } from "../../../slices/taskSlice";
 
 const RepresentativeTaskDashboard = () => {
   const dispatch = useDispatch();
@@ -26,11 +27,11 @@ const RepresentativeTaskDashboard = () => {
           dispatch(fetchTasks(token)),
         ]);
 
-        console.log("Data loaded successfully:", {
-          repsData,
-          customersData,
-          tasksData,
-        });
+        // console.log("Data loaded successfully:", {
+        //   repsData,
+        //   customersData,
+        //   tasksData,
+        // });
         localStorage.setItem("representatives", JSON.stringify(repsData));
         localStorage.setItem("customers", JSON.stringify(customersData));
         localStorage.setItem("tasks", JSON.stringify(tasksData));
@@ -41,10 +42,6 @@ const RepresentativeTaskDashboard = () => {
 
     loadAllData();
   }, [dispatch, token]);
-
-  console.log("Rep:", representatives);
-  console.log("Cust:", customers);
-  console.log("Task:", tasks);
 
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,10 +138,16 @@ const RepresentativeTaskDashboard = () => {
     <div className="mx-auto">
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center p-6 bg-gray-50 border-b">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
-            Representative Task Dashboard
-          </h1>
+        <div className="flex flex-col md:flex-row justify-between items-center p-8 bg-gray-50 border-b">
+          <div>
+            <h1 className="lg:text-3xl md:text-3xl text-2xl font-bold text-gray-900">
+              Representatives Tasks Dashboard
+            </h1>
+            <p className="text-gray-500 mt-2">
+              View and manage tasks assigned to representatives, track progress,
+              and update statuses efficiently.
+            </p>
+          </div>
           <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Status Filter */}
             <div className="flex items-center space-x-4">
@@ -212,9 +215,7 @@ const RepresentativeTaskDashboard = () => {
         )}
 
         {/* No Tasks Message */}
-        {filteredTasks.length === 0 && (
-         <Loader/>
-        )}
+        {filteredTasks.length === 0 && <Loader />}
       </div>
 
       <Modal
@@ -222,12 +223,18 @@ const RepresentativeTaskDashboard = () => {
         onClose={() => setIsModalOpen(false)}
         title="Assign New Task"
       >
-        <TaskForm
+        {/* <TaskForm
           teamMembers={representatives}
-          customers={customers}
           onSubmit={handleTaskSubmit}
           onCancel={() => setIsModalOpen(false)}
           isUpdate={false}
+        /> */}
+        <TaskForm
+          task={tasks}
+          teamMembers={representatives}
+          onSubmit={handleTaskSubmit}
+          onCancel={() => setIsModalOpen(false)}
+          customers={customers}
         />
       </Modal>
     </div>

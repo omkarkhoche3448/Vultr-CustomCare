@@ -21,6 +21,8 @@ import { createTask } from "../../../services/operations/adminServices";
 import { CustomerSelect, TeamMemberSelect } from "./Dropdown";
 
 const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT;
+const GenaiScriptPrompt = import.meta.env.VITE_GENERATE_SCRIPT;
+const GenaiKeywordPrompt = import.meta.env.VITE_GENERATE_KEYWORDS;
 
 const TaskForm = ({
   task = {},
@@ -172,7 +174,8 @@ const TaskForm = ({
     try {
       const generatedScript = await generateScript(
         description,
-        "based on the above context, write me a script that I will use to convince the customer to purchase my product",
+        // "based on the above context, write me a script that I will use to convince the customer to purchase my product",
+        GenaiScriptPrompt,
         GenaiToken,
         token
       );
@@ -205,7 +208,8 @@ const TaskForm = ({
     try {
       const { personalKeywords, productKeywords } = await generateKeywords(
         script,
-        "Extract keywords from this script",
+        // "Extract keywords from this script",
+        GenaiKeywordPrompt,
         GenaiToken,
         token
       );

@@ -83,7 +83,7 @@ const RepresentativesDashboard = () => {
     setIsModalOpen(false);
   };
 
-  console.log("Representativedash:", representatives);
+  // console.log("Representativedash:", representatives);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
