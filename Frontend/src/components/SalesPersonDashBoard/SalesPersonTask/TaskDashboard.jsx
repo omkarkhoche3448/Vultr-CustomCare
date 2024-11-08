@@ -32,7 +32,7 @@ const TaskDashboard = () => {
 
   useEffect(() => {
     if (token) {
-      dispatch(fetchRepresentativeTasks(token));
+      dispatch(fetchRepresentativeTasks(token,user));
     }
   }, [dispatch, token]);
 

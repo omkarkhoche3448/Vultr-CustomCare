@@ -1,36 +1,41 @@
 import axios from "axios";
-import { setTasks, setError, setLoading } from "../../slices/taskSlice";
+import { setAssignedTasks, setError, setLoading } from "../../slices/representativesSlice";
 import { endpoints } from "../api";
 
 const { GET_REP_TASKS_API } = endpoints;
 
-export const fetchRepresentativeTasks = (token) => async (dispatch) => {
-  console.log("Fetching representative tasks...");
+export const fetchRepresentativeTasks = (token, user) => async (dispatch) => {
   try {
     dispatch(setLoading(true));
+    
     const response = await axios.get(GET_REP_TASKS_API, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      params: {
+        user: user,
+      },
     });
-    
-    // Transform the response to match the frontend structure
-    const transformedTasks = response.data.map(task => ({
-      _id: task.taskId,
-      projectTitle: task.title,
-      customerName: task.customerNames[0]?.name || 'N/A',
-      description: task.description,
-      assignedTo: "Representative",
-      status: "PENDING", // You might want to add status in backend response
-      lastUpdated: task.createdAt
-    }));
 
-    dispatch(setTasks(transformedTasks));
-    dispatch(setLoading(false));
-    return transformedTasks;
+    const transformedTasks = response.data.map((task) => ({
+      category: task.category,
+      customers: task.customers,
+      projectTitle: task.projectTitle,
+      description: task.description,
+      script: task.script,
+      keywords: task.keywords,
+      assignedMembers: task.assignedMembers,
+      status: task.status,
+      priority: task.priority,
+      assignedDate: task.assignedDate,
+      dueDate: task.dueDate,
+    }));
+    console.log("transformedTasks", transformedTasks);
+
+    dispatch(setAssignedTasks(transformedTasks));
   } catch (error) {
-    dispatch(setError(error.message));
-    dispatch(setLoading(false));
-    throw error;
+    dispatch(setError(error.message || "Failed to fetch tasks"));
+  } finally {
+    dispatch(setLoading(false)); 
   }
 };

@@ -1,246 +1,109 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchRepresentativeTasks } from "../../../services/operations/representativeServices";
 import {
-  Check,
-  AlertCircle,
   Clock,
-  Tag,
-  User,
-  Calendar,
   Search,
   Filter,
+  CheckCircle,
+  Circle,
+  User,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from "lucide-react";
 
-// API Service for Task Management
-const TaskService = {
-  // Dummy token for authorization (in real-world, this would come from authentication)
-  token: "",
-
-  // Base URL for API (replace with actual backend URL)
-  baseUrl: "https://api.example.com/tasks",
-
-  // Fetch Tasks
-  async fetchTasks(status = "pending") {
-    try {
-      // Commented out actual API call for demonstration
-      // const response = await fetch(`${this.baseUrl}?status=${status}`, {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer ${this.token}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error('Failed to fetch tasks');
-      // }
-
-      // return await response.json();
-
-      // Dummy data for demonstration
-      return [
-        {
-          id: 1,
-          customerName: "John Smith",
-          projectTitle: "Project Alpha",
-          description:
-            "Comprehensive project analysis and initial blueprint development",
-          script: "Analyze project requirements and create detailed blueprint",
-          keywords: ["Analysis", "Strategic Planning", "Blueprint"],
-          priority: "high",
-          status: status,
-          assignedTo: "representative",
-          dueDate: "2024-02-15",
-        },
-        {
-          id: 2,
-          customerName: "Emily Davis",
-          projectTitle: "Project Beta",
-          description:
-            "Comprehensive project documentation and timeline creation",
-          script: "Document requirements and develop project timeline",
-          keywords: ["Documentation", "Project Management"],
-          priority: "medium",
-          status: status,
-          assignedTo: "representative",
-          dueDate: "2024-02-20",
-        },
-      ];
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-      return [];
-    }
-  },
-
-  // Complete Task
-  async completeTask(taskId) {
-    try {
-      // Commented out actual API call for demonstration
-      // const response = await fetch(`${this.baseUrl}/${taskId}/complete`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Authorization': `Bearer ${this.token}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({ status: 'completed' })
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error('Failed to complete task');
-      // }
-
-      // return await response.json();
-
-      // Dummy successful response
-      return {
-        ...this.fetchTasks().find((task) => task.id === taskId),
-        status: "completed",
-        completedAt: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error("Error completing task:", error);
-      return null;
-    }
-  },
-};
-
-// Priority color configuration (kept from original)
-const priorityConfig = {
-  high: {
-    border: "border-red-500",
-    bg: "bg-red-50",
-    text: "text-red-800",
-    badge: "bg-red-100",
-  },
-  medium: {
-    border: "border-amber-500",
-    bg: "bg-amber-50",
-    text: "text-amber-800",
-    badge: "bg-amber-100",
-  },
-  low: {
-    border: "border-green-500",
-    bg: "bg-green-50",
-    text: "text-green-800",
-    badge: "bg-green-100",
-  },
-};
-
-const RepresentativeTaskDashboard = () => {
-  // State Management
-  const [tasks, setTasks] = useState([]);
-  const [filter, setFilter] = useState("pending");
+const TaskDashboard = () => {
+  const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPriority, setSelectedPriority] = useState(null);
-  const [confirmTask, setConfirmTask] = useState(null);
+  const [selectedPriority, setSelectedPriority] = useState("all");
+  const [expandedTasks, setExpandedTasks] = useState({});
 
-  // Loading and Error States
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const {
+    assignedTasks: tasks,
+    loading,
+    error,
+  } = useSelector((state) => state.representatives);
+  const { user, token } = useSelector((state) => state.auth);
 
-  // Fetch Tasks Effect
+  const [completedTasks, setCompletedTasks] = useState(new Set());
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const uniqueCategories = ["all", "high", "medium", "low"];
+
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Fetch tasks based on current filter
-        const fetchedTasks = await TaskService.fetchTasks(filter);
-        setTasks(fetchedTasks);
-      } catch (err) {
-        setError("Failed to load tasks. Please try again.");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTasks();
-  }, [filter]);
-
-  // Filtered and searched tasks
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(
-      (task) =>
-        (searchTerm === "" ||
-          task.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.customerName.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        (selectedPriority === null || task.priority === selectedPriority)
-    );
-  }, [tasks, searchTerm, selectedPriority]);
-
-  // Complete task handler
-  const completeTask = async (taskId) => {
-    try {
-      setIsLoading(true);
-      const completedTask = await TaskService.completeTask(taskId);
-
-      if (completedTask) {
-        // Update tasks list
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === taskId ? completedTask : task))
-        );
-        setConfirmTask(null);
-      }
-    } catch (err) {
-      setError("Failed to complete task. Please try again.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+    if (token && user) {
+      dispatch(fetchRepresentativeTasks(token, user));
     }
+  }, [dispatch, token, user]);
+
+  const toggleTaskExpansion = (index) => {
+    setExpandedTasks((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
   };
 
-  // Confirmation Modal (kept from original)
-  const ConfirmModal = ({ task, onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Confirm Task Completion
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to mark
-          <span className="font-semibold"> {task.projectTitle} </span>
-          as completed?
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="inline-flex items-center px-2 py-1 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 text-sm md:text-base lg:text-lg"
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const toggleFilter = (category) => {
+    setSelectedPriority(category);
+    setDropdownOpen(false);
+  };
 
-  // Loading Spinner Component
-  const LoadingSpinner = () => (
-    <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  );
+  const handleTaskCompletion = (projectTitle) => {
+    setCompletedTasks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectTitle)) {
+        newSet.delete(projectTitle);
+      } else {
+        newSet.add(projectTitle);
+      }
+      return newSet;
+    });
+  };
 
-  // Error Message Component
-  const ErrorMessage = ({ message }) => (
-    <div
-      className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded relative"
-      role="alert"
-    >
-      <span className="block sm:inline">{message}</span>
-    </div>
-  );
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.filter((task) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesPriority =
+        selectedPriority === "all" ||
+        task.priority.toLowerCase() === selectedPriority.toLowerCase();
+
+      const isCompleted = completedTasks.has(task.projectTitle);
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : filter === "pending"
+          ? !isCompleted
+          : filter === "completed"
+          ? isCompleted
+          : true;
+
+      return matchesSearch && matchesPriority && matchesFilter;
+    });
+  }, [tasks, searchTerm, selectedPriority, filter, completedTasks]);
+
+  const getPriorityClasses = (priority) => {
+    switch (priority.toLowerCase()) {
+      case "high":
+        return "text-red-700 border-red-200 bg-red-50";
+      case "medium":
+        return "text-yellow-700 border-yellow-200 bg-yellow-50";
+      case "low":
+        return "text-green-700 border-green-200 bg-green-50";
+      default:
+        return "text-gray-700 border-gray-200 bg-gray-50";
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mx-auto space-y-8">
-        {/* Header (kept from original) */}
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -250,172 +113,278 @@ const RepresentativeTaskDashboard = () => {
               Manage your Tasks Assigned by Boss
             </p>
           </div>
-
           <div className="flex space-x-4">
-            {/* Status Filter */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setFilter("pending")}
-                className={`px-3 py-1 rounded-md transition ${
-                  filter === "pending"
-                    ? "bg-purple-600 text-white  hover:bg-purple-700"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                Pending
-              </button>
-              <button
-                onClick={() => setFilter("completed")}
-                className={`px-3 py-1 rounded-md transition ${
-                  filter === "completed"
-                    ? " bg-purple-600 text-white  hover:bg-purple-700 "
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                Completed
-              </button>
-            </div>
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1 rounded-md transition ${
+                filter === "all"
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilter("pending")}
+              className={`px-3 py-1 rounded-md transition ${
+                filter === "pending"
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setFilter("completed")}
+              className={`px-3 py-1 rounded-md transition ${
+                filter === "completed"
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              Completed
+            </button>
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search and Filter */}
         <div className="mb-6 flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
-          <div className="relative flex-grow">
+          <div className="relative flex-grow space-x-2">
             <input
               type="text"
-              placeholder="Search tasks by project or customer"
+              placeholder="Search tasks by title or customer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-[80%] pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Filter className="text-gray-500" size={20} />
-            <select
-              value={selectedPriority || ""}
-              onChange={(e) => setSelectedPriority(e.target.value || null)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+          {/* Priority Filter */}
+          <div className="relative inline-block ">
+            <button
+              className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
             >
-              <option value="">All Priorities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+              <span className="mr-2">
+                {selectedPriority.charAt(0).toUpperCase() +
+                  selectedPriority.slice(1)}
+              </span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {/* Dropdown menu */}
+            {dropdownOpen && (
+              <div className="absolute top-full mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+                <div className="py-1">
+                  {uniqueCategories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => toggleFilter(category)}
+                      className={`w-full text-left px-4 py-2 text-sm ${
+                        selectedPriority === category
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {category === "all"
+                        ? "All Priorities"
+                        : category.charAt(0).toUpperCase() + category.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Error Handling */}
-        {error && <ErrorMessage message={error} />}
-
-        {/* Loading State */}
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : // Tasks List (kept from original, with minor modifications)
-        filteredTasks.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
-            <p className="text-lg">No tasks found</p>
+        {/* Task List */}
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredTasks.map((task) => {
-              const priority = priorityConfig[task.priority];
-              return (
-                <div
-                  key={task.id}
-                  className={`border-l-4 ${priority.border} ${priority.bg} 
-                      rounded-lg p-4 hover:shadow-md transition duration-300 relative`}
-                >
-                  {/* Task card content (kept from original) */}
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-800">
-                          {task.projectTitle}
-                        </h3>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium 
-                              ${priority.badge} ${priority.text}`}
-                        >
-                          {task.priority.charAt(0).toUpperCase() +
-                            task.priority.slice(1)}
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-2">
-                        {task.description}
+            {filteredTasks.map((task) => (
+              <div
+                key={task.projectTitle}
+                className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => handleTaskCompletion(task.projectTitle)}
+                      className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                    >
+                      {completedTasks.has(task.projectTitle) ? (
+                        <CheckCircle
+                          className="text-green-500 hover:text-green-600"
+                          size={24}
+                        />
+                      ) : (
+                        <Circle
+                          className="text-gray-300 hover:text-gray-400"
+                          size={24}
+                        />
+                      )}
+                    </button>
+                    <div>
+                      <p
+                        className={`font-medium ${
+                          completedTasks.has(task.projectTitle)
+                            ? "line-through text-gray-500"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {task.projectTitle}
                       </p>
-
-                      <div className="text-xs text-gray-500 space-y-1 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Clock size={14} className="text-gray-400" />
-                          <span>{task.script}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <User size={14} className="text-gray-400" />
-                          <span>{task.customerName}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar size={14} className="text-gray-400" />
+                      <div className="flex items-center mt-1 space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Clock size={14} className="mr-1" />
                           <span>Due: {task.dueDate}</span>
                         </div>
-                      </div>
-
-                      {task.keywords && task.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {task.keywords.map((keyword, index) => (
-                            <span
-                              key={index}
-                              className="flex items-center space-x-1 
-                                  bg-white/50 text-gray-700 
-                                  rounded-full px-2 py-1 text-xs
-                                  border border-gray-200"
-                            >
-                              <Tag size={12} className="text-gray-500" />
-                              <span>{keyword}</span>
-                            </span>
-                          ))}
+                        <div className="flex items-center">
+                          <User size={14} className="mr-1" />
+                          <span>
+                            {task.assignedMembers
+                              .map((member) => member.name)
+                              .join(", ")}
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </div>
-
-                    {task.status === "pending" && (
-                      <button
-                        onClick={() => setConfirmTask(task)}
-                        className="absolute top-4 right-4 bg-green-500 text-white p-2 rounded-full 
-                            hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400
-                            transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
-                      >
-                        <Check size={20} />
-                      </button>
-                    )}
                   </div>
 
-                  {task.status === "completed" && task.completedAt && (
-                    <div className="text-xs text-gray-500 mt-2 italic">
-                      Completed on:{" "}
-                      {new Date(task.completedAt).toLocaleString()}
+                  <div className="flex items-center space-x-4">
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityClasses(
+                        task.priority
+                      )}`}
+                    >
+                      {task.priority}
                     </div>
-                  )}
+                    <button
+                      onClick={() => toggleTaskExpansion(task.projectTitle)}
+                      className="p-1 hover:bg-gray-100 rounded-full"
+                    >
+                      {expandedTasks[task.projectTitle] ? (
+                        <ChevronUp size={20} className="text-gray-500" />
+                      ) : (
+                        <ChevronDown size={20} className="text-gray-500" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+
+                {expandedTasks[task.projectTitle] && (
+                  <div className="px-4 pb-4 border-t border-gray-100 mt-2 pt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                          Description
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {task.description}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                          Customer Count
+                          <span className="text-sm text-gray-600 ml-2">
+                            {task.customers?.length || 0}
+                          </span>
+                        </h4>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                          Script/Notes
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {task.script?.length > 400
+                            ? `${task.script.slice(0, 400)}...`
+                            : task.script}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
-
-      {/* Confirmation Modal */}
-      {confirmTask && (
-        <ConfirmModal
-          task={confirmTask}
-          onConfirm={() => completeTask(confirmTask.id)}
-          onCancel={() => setConfirmTask(null)}
-        />
-      )}
     </div>
   );
 };
 
-export default RepresentativeTaskDashboard;
+const priorityConfig = {
+  high: {
+    color: "text-red-600",
+    border: "border-red-200",
+    bg: "bg-red-50",
+    hover: "hover:bg-red-100",
+  },
+  medium: {
+    color: "text-amber-600",
+    border: "border-amber-200",
+    bg: "bg-amber-50",
+    hover: "hover:bg-amber-100",
+  },
+  low: {
+    color: "text-green-600",
+    border: "border-green-200",
+    bg: "bg-green-50",
+    hover: "hover:bg-green-100",
+  },
+};
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Confirm Task Completion</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="mb-6">
+          <p className="text-gray-700">
+            Are you sure you want to mark this task as complete?
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            This action will update the task status and cannot be undone
+            immediately.
+          </p>
+        </div>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskDashboard;
