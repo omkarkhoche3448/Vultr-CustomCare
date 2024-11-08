@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PaginationControls from "./PaginationControls";
 
 function RecentTasks({ recentActivity }) {
+  
+  const [task, setTask] = useState(recentActivity);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
   const totalPages = Math.ceil(recentActivity.length / itemsPerPage);
@@ -12,8 +15,10 @@ function RecentTasks({ recentActivity }) {
     currentPage * itemsPerPage
   );
 
+
   function TimeAgo({ createdAt }) {
     const [timeAgoText, setTimeAgoText] = useState("");
+    // console.log(createdAt);
 
     // Function to calculate time ago
     const calculateTimeAgo = () => {
@@ -52,6 +57,7 @@ function RecentTasks({ recentActivity }) {
 
     return <span>{timeAgoText}</span>;
   }
+  // console.log(recentActivity);
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-lg">
@@ -102,7 +108,7 @@ function RecentTasks({ recentActivity }) {
                     </span>
                   </td>
                   <td className="w-1/3 py-4 text-sm text-gray-600">
-                    <TimeAgo createdAt={task.createdAt} />
+                    <TimeAgo createdAt={activity.createdAt} />
                   </td>
                 </tr>
               ))}
