@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from "react-redux";
 import PaginationControls from "./PaginationControls";
 
 function RecentTasks({ recentActivity }) {
-  console.log("RecentActivity:", recentActivity);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
   const totalPages = Math.ceil(recentActivity.length / itemsPerPage);
@@ -46,7 +45,7 @@ function RecentTasks({ recentActivity }) {
             <tbody>
               {paginatedData.map((activity) => (
                 <tr
-                  key={activity.id}
+                  key={activity.taskId}
                   className="border-b border-gray-100 last:border-0"
                 >
                   <td className="w-1/3 py-4">

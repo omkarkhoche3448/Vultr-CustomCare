@@ -49,7 +49,7 @@ const RepresentativeTable = () => {
     const fetchData = async () => {
       try {
         const data = await fetchRepresentatives(token);
-        console.log("RepresentativeTable", data);
+        // console.log("RepresentativeTable", data);
         setRepresentative(data);
       } catch (err) {
         console.log("Error fetching representatives:", err);

@@ -27,11 +27,11 @@ const RepresentativeTaskDashboard = () => {
           dispatch(fetchTasks(token)),
         ]);
 
-        console.log("Data loaded successfully:", {
-          repsData,
-          customersData,
-          tasksData,
-        });
+        // console.log("Data loaded successfully:", {
+        //   repsData,
+        //   customersData,
+        //   tasksData,
+        // });
         localStorage.setItem("representatives", JSON.stringify(repsData));
         localStorage.setItem("customers", JSON.stringify(customersData));
         localStorage.setItem("tasks", JSON.stringify(tasksData));
@@ -42,10 +42,6 @@ const RepresentativeTaskDashboard = () => {
 
     loadAllData();
   }, [dispatch, token]);
-
-  console.log("Rep:", representatives);
-  console.log("Cust:", customers);
-  console.log("Task:", tasks);
 
   // State management
   const [currentPage, setCurrentPage] = useState(1);

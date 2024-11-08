@@ -143,7 +143,6 @@ const TaskTable = ({
     }));
   };
 
-  console.log("TaskFor Table: ", tasks);
   return (
     <div className="space-y-4">
       {/* Search and Filter Controls */}
@@ -240,7 +239,7 @@ const TaskTable = ({
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedTasks.map((task) => (
                   <tr
-                    key={task.id}
+                    key={task.taskId}
                     className={`hover:bg-gray-50 ${
                       selectedTasks.includes(task.id)
                         ? "bg-gray-100"
