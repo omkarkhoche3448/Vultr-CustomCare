@@ -4,6 +4,7 @@ const repController = require('../controllers/repController');
 const router = express.Router();
 
 // Route for representatives to fetch their assigned tasks
-router.get('/assigned-tasks', authenticate, authorizeRepresentative, repController.getAssignedTasks);
+// router.get('/assigned-tasks', authenticate, authorizeRepresentative, repController.getAssignedTasks);s
+router.get('/assigned-tasks', repController.getAssignedTasks);
 
 module.exports = router;
