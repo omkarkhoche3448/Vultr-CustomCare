@@ -143,7 +143,6 @@ const TaskTable = ({
     }));
   };
 
-  // console.log("TaskFor Table: ", tasks);
   return (
     <div className="space-y-4">
       {/* Search and Filter Controls */}

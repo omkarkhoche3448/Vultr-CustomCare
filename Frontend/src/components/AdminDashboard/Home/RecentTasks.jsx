@@ -12,13 +12,45 @@ function RecentTasks({ recentActivity }) {
     currentPage * itemsPerPage
   );
 
-  function timeAgo(timestamp) {
-    const currentTime = new Date();
-    const pastTime = new Date(timestamp);
-    const differenceInMs = currentTime - pastTime;
-    const differenceInHours = Math.floor(differenceInMs / (1000 * 60 * 60));
+  function TimeAgo({ createdAt }) {
+    const [timeAgoText, setTimeAgoText] = useState("");
 
-    return `${differenceInHours} hrs ago`;
+    // Function to calculate time ago
+    const calculateTimeAgo = () => {
+      const currentTime = new Date();
+      const pastTime = new Date(createdAt);
+      const differenceInMs = currentTime - pastTime;
+
+      const differenceInSeconds = Math.floor(differenceInMs / 1000);
+      const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+      const differenceInHours = Math.floor(differenceInMinutes / 60);
+      const remainingMinutes = differenceInMinutes % 60;
+      const remainingSeconds = differenceInSeconds % 60;
+
+      let timeString = "";
+      if (differenceInHours > 0) {
+        timeString = `${differenceInHours} hrs ${remainingMinutes} min ${remainingSeconds} sec ago`;
+      } else if (differenceInMinutes > 0) {
+        timeString = `${remainingMinutes} min ${remainingSeconds} sec ago`;
+      } else {
+        timeString = `${remainingSeconds} sec ago`;
+      }
+
+      setTimeAgoText(timeString);
+    };
+
+    useEffect(() => {
+      // Set initial time ago
+      calculateTimeAgo();
+
+      // Update time every second
+      const intervalId = setInterval(calculateTimeAgo, 1000);
+
+      // Cleanup interval on component unmount
+      return () => clearInterval(intervalId);
+    }, [createdAt]); // Re-run when createdAt changes
+
+    return <span>{timeAgoText}</span>;
   }
 
   return (
@@ -70,7 +102,7 @@ function RecentTasks({ recentActivity }) {
                     </span>
                   </td>
                   <td className="w-1/3 py-4 text-sm text-gray-600">
-                    {timeAgo(activity.createdAt)}
+                    <TimeAgo createdAt={task.createdAt} />
                   </td>
                 </tr>
               ))}
