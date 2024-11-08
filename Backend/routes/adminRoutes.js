@@ -35,7 +35,7 @@ router.get('/customers',  adminController.getCustomerData);
 const checkGenAIToken = (req, res, next) => {
     const genAIToken = req.headers['genai-auth'];
 
-    if (!genAIToken || genAIToken !== vultr_llama_endpoint) {
+    if (!genAIToken || genAIToken.trim() !== vultr_llama_endpoint.trim()) {
         console.log(genAIToken);
         return res.status(401).json({ message: 'Unauthorized: Invalid GenAI token' });
     }
