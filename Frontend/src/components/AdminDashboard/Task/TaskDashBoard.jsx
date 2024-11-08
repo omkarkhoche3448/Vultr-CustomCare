@@ -10,6 +10,8 @@ import {
 } from "../../../services/operations/adminServices";
 import Loader from "../Loader";
 import { setTasks } from "../../../slices/taskSlice";
+import {setRepresentatives} from "../../../slices/representativesSlice";
+import {setCustomers} from "../../../slices/customerSlice";
 
 const RepresentativeTaskDashboard = () => {
   const dispatch = useDispatch();
@@ -32,9 +34,9 @@ const RepresentativeTaskDashboard = () => {
         //   customersData,
         //   tasksData,
         // });
-        localStorage.setItem("representatives", JSON.stringify(repsData));
-        localStorage.setItem("customers", JSON.stringify(customersData));
-        localStorage.setItem("tasks", JSON.stringify(tasksData));
+        dispatch(setRepresentatives(repsData));
+        dispatch(setCustomers(customersData));
+        dispatch(setTasks(tasksData));
       } catch (error) {
         console.error("Error loading data:", error);
       }
@@ -134,6 +136,10 @@ const RepresentativeTaskDashboard = () => {
     }
   };
 
+  // console.log("REPRESENTATIVES", representatives);
+  // console.log("CUSTOMERS", customers);
+  // console.log("TASKS", tasks);
+
   return (
     <div className="mx-auto">
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -223,12 +229,6 @@ const RepresentativeTaskDashboard = () => {
         onClose={() => setIsModalOpen(false)}
         title="Assign New Task"
       >
-        {/* <TaskForm
-          teamMembers={representatives}
-          onSubmit={handleTaskSubmit}
-          onCancel={() => setIsModalOpen(false)}
-          isUpdate={false}
-        /> */}
         <TaskForm
           task={tasks}
           teamMembers={representatives}

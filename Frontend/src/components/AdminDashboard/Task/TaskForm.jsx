@@ -33,6 +33,9 @@ const TaskForm = ({
   customers = [],
   handle,
 }) => {
+  // console.log("task:", task);
+  // console.log("teamMembers:", teamMembers);
+  // console.log("customers:", customers);
   const defaultValues = {
     category: task?.category || "",
     customers: task?.customers || [],
@@ -61,6 +64,7 @@ const TaskForm = ({
   });
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
+
   const [currentKeyword, setCurrentKeyword] = useState("");
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
@@ -87,39 +91,6 @@ const TaskForm = ({
           category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(),
       }));
   }, [customers]);
-
-  const customerOptions = availableCustomers.map((customer) => ({
-    value: customer.id,
-    key: customer.email,
-    label: `${customer.customername || "No Name"} - ${
-      customer.email || "No Email"
-    } - ${customer.productdemand || "No Product"}`,
-    customer: {
-      id: customer.id,
-      name: customer.customername,
-      email: customer.email,
-      productDemand: customer.productdemand,
-      category: customer.category,
-    },
-  }));
-
-  const handleCustomerChange = (selectedOptions) => {
-    if (!selectedOptions || selectedOptions.length === 0) {
-      setValue("customers", []);
-      setSelectAllChecked(false);
-      toast.info("All customers deselected");
-      return;
-    }
-    const selectedCustomerData = selectedOptions.map((option) => ({
-      id: option.customer.id,
-      name: option.customer.name,
-      email: option.customer.email,
-      productDemand: option.customer.productDemand,
-      category: option.customer.category,
-    }));
-    setValue("customers", selectedCustomerData);
-    setSelectAllChecked(selectedOptions.length === availableCustomers.length);
-  };
 
   const handleSelectAllCustomers = () => {
     if (!selectedCategory) return;
@@ -314,6 +285,7 @@ const TaskForm = ({
     // console.log('Available customers:', customers);
     setAvailableCustomers(customers);
   }, [customers]);
+
 
   return (
     <div>
