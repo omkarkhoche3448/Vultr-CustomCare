@@ -407,6 +407,7 @@ const RepresentativeTable = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
+            {console.log("paginatedData",paginatedData)}
               {paginatedData.length == 0 ? (
                 <tr>
                   <td
