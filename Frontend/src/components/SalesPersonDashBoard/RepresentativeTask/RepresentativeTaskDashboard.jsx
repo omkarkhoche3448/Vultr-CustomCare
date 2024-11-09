@@ -26,10 +26,24 @@ const TaskDashboard = () => {
     error,
   } = useSelector((state) => state.representatives);
   const { user, token } = useSelector((state) => state.auth);
+  const userEmail = user.email;
 
   const [completedTasks, setCompletedTasks] = useState(new Set());
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const uniqueCategories = ["all", "high", "medium", "low"];
+
+  const handleRedirect = (task) => {
+    const taskId = task.taskId;
+    const projectTitle = task.projectTitle;
+
+    const redirectUrl = `http://localhost:5174/dashboard?email=${encodeURIComponent(
+      userEmail
+    )}&taskId=${encodeURIComponent(taskId)}&projectTitle=${encodeURIComponent(
+      projectTitle
+    )}`;
+
+    window.location.href = redirectUrl;
+  };
 
   useEffect(() => {
     if (token && user) {
@@ -110,7 +124,7 @@ const TaskDashboard = () => {
               Task Management
             </h1>
             <p className="text-gray-500 mt-1">
-              Manage your Tasks Assigned by Boss
+              Manage your Tasks Assigned by Admin
             </p>
           </div>
           <div className="flex space-x-4">
@@ -197,6 +211,9 @@ const TaskDashboard = () => {
             )}
           </div>
         </div>
+        <div className="text-gray-600 text-md px-4 tracking-wide">
+          Click on TaskTitle to make a call
+        </div>
 
         {/* Task List */}
         {loading ? (
@@ -230,11 +247,12 @@ const TaskDashboard = () => {
                     </button>
                     <div>
                       <p
-                        className={`font-medium ${
+                        className={`font-medium cursor-pointer ${
                           completedTasks.has(task.projectTitle)
                             ? "line-through text-gray-500"
                             : "text-gray-900"
                         }`}
+                        onClick={() => handleRedirect(task)}
                       >
                         {task.projectTitle}
                       </p>

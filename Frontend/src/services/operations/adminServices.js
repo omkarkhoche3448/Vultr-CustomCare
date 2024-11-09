@@ -39,7 +39,7 @@ export const createTask = async (taskData, token) => {
 };
 
 export const fetchTasks = (token) => async (dispatch) => {
-  // console.log("Token:", token);
+  console.log("Token:", token);
   console.log("Fetching tasks...");
   try {
     dispatch(setLoading(true));

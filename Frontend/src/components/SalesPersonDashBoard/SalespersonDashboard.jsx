@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import SalespersonSidebar from "./SalespersonSidebar";
-import CallList from "./Calling/CallList";
+// import CallList from "./Calling/CallList";
 import TaskDashboard from "./SalesPersonTask/TaskDashboard";
 import RepresentativeTaskDashboard from "./RepresentativeTask/RepresentativeTaskDashboard";
 import CustomerTracking from "./Customer/CustomerTracking";
@@ -12,7 +12,7 @@ import { logout } from "../../services/operations/authServices";
 // Define routes and their corresponding components and IDs
 const routeConfig = {
   tasks: { id: 1, component: TaskDashboard },
-  calls: { id: 2, component: CallList },
+  // calls: { id: 2, component: CallList },
   schedule: { id: 3, component: RepresentativeTaskDashboard },
   users: { id: 4, component: CustomerTracking },
 };
@@ -20,7 +20,7 @@ const routeConfig = {
 // Reverse mapping for getting route from ID
 const idToRoute = {
   1: "tasks",
-  2: "calls",
+  // 2: "calls",
   3: "schedule",
   4: "users",
 };

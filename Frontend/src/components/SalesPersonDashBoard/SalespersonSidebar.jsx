@@ -3,7 +3,7 @@ import { Home, Phone, Clock, Users } from "lucide-react";
 
 const icons = [
   { id: 1, name: "Home", Icon: Home },
-  { id: 2, name: "Phone", Icon: Phone },
+  // { id: 2, name: "Phone", Icon: Phone },
   { id: 3, name: "Clock", Icon: Clock },
   { id: 4, name: "Users", Icon: Users },
 ];

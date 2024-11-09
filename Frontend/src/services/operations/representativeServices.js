@@ -16,8 +16,10 @@ export const fetchRepresentativeTasks = (token, user) => async (dispatch) => {
         user: user,
       },
     });
+    console.log("response", response);
 
     const transformedTasks = response.data.map((task) => ({
+      taskId: task.taskId,
       category: task.category,
       customers: task.customers,
       projectTitle: task.projectTitle,

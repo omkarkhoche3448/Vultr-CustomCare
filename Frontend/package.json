@@ -4,16 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev-client": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev-aicall": "cd ../AiCall && npm run dev",
+    "dev-server": "cd ../Backend && npm run dev",
+    "dev": "concurrently -n \"client,server,aicall\" -c \"bgBlue,bgYellow,bgGreen\" \"npm run dev-client\" \"npm run dev-server\" \"npm run dev-aicall\""
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.3.0",
     "agora-react-uikit": "^1.2.0",
     "agora-rtc-sdk-ng": "^4.22.2",
     "axios": "^1.7.7",
+    "concurrently": "^9.1.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.453.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",

@@ -136,9 +136,9 @@ const RepresentativeTaskDashboard = () => {
     }
   };
 
-  // console.log("REPRESENTATIVES", representatives);
-  // console.log("CUSTOMERS", customers);
-  // console.log("TASKS", tasks);
+  console.log("REPRESENTATIVES", representatives);
+  console.log("CUSTOMERS", customers);
+  console.log("TASKS", tasks);
 
   return (
     <div className="mx-auto">

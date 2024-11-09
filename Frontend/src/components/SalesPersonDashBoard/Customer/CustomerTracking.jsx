@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Calendar,
   Clock,
@@ -14,7 +14,6 @@ import {
 import { fetchRepresentativeTasks } from "../../../services/operations/representativeServices";
 import { useDispatch, useSelector } from "react-redux";
 import TaskCard from "./TaskCard";
- 
 
 function CustomerTracking() {
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -35,20 +34,8 @@ function CustomerTracking() {
   console.log("customer tracking", tasks);
 
   const handleCustomerCall = (taskId, customerIndex) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.taskId === taskId
-          ? {
-              ...task,
-              customers: task.customers.map((customer, index) =>
-                index === customerIndex
-                  ? { ...customer, called: !customer.called }
-                  : customer
-              ),
-            }
-          : task
-      )
-    );
+    console.log("Customer call initiated for taskId:", taskId);
+    console.log("Customer index:", customerIndex);
   };
 
   const handleTaskToggle = (taskId) => {
@@ -58,11 +45,14 @@ function CustomerTracking() {
   };
 
   return (
-    <div className=" mx-auto">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-5">
+    <div className="p-6 bg-gray-50 min-h-screen w-full mx-auto">
+      <div className="p-1">
+        <h1 className="text-xl sm:text-3xl font-semibold text-gray-900 mb-5">
           Customer Dashboard Overview
         </h1>
+        <p className="text-gray-600 text-sm mt-1 mb-5 font-medium">
+          Stay Ahead by Tracking Your Customer Interactions
+        </p>
       </div>
       <div className="flex flex-wrap gap-4">
         {tasks.map((task) => (
