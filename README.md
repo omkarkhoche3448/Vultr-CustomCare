@@ -76,7 +76,7 @@ Create PHP configuration directory at C://Program Files//php-8.2.25
 Configure php.ini - Enable pdo_mysql extension
 
 
-#💻 Usage
+# 💻 Usage
  
  
 ## Start all services concurrently
