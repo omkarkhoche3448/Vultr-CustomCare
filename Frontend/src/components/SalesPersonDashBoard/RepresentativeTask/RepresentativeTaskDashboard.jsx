@@ -32,18 +32,40 @@ const TaskDashboard = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const uniqueCategories = ["all", "high", "medium", "low"];
 
+  // const handleRedirect = (task) => {
+  //   const taskId = task.taskId;
+  //   const projectTitle = task.projectTitle;
+
+  //   const redirectUrl = `http://localhost:5174/dashboard?email=${encodeURIComponent(
+  //     userEmail
+  //   )}&taskId=${encodeURIComponent(taskId)}&projectTitle=${encodeURIComponent(
+  //     projectTitle
+  //   )}`;
+
+  //   window.location.href = redirectUrl;
+  // };
+
   const handleRedirect = (task) => {
     const taskId = task.taskId;
     const projectTitle = task.projectTitle;
 
+    
+  
+    // Assuming `task.customer` is an array of customer objects with an `email` property
+    const customerEmails = task.customers.map((customer) => customer.email).join(",");
+    console.log("customerEmails:", customerEmails);
+  
+    // Construct the URL with the customer emails as a parameter
     const redirectUrl = `http://localhost:5174/dashboard?email=${encodeURIComponent(
       userEmail
     )}&taskId=${encodeURIComponent(taskId)}&projectTitle=${encodeURIComponent(
       projectTitle
-    )}`;
-
+    )}&customerEmails=${encodeURIComponent(customerEmails)}`;
+  
+    // Redirect to the new app (Running on a different port)
     window.location.href = redirectUrl;
   };
+  
 
   useEffect(() => {
     if (token && user) {
