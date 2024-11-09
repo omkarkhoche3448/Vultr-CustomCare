@@ -1,6 +1,0 @@
-id,name,productDemand,category,email
-cust_001,John Doe,High-Performance GPU for AI Training,GPU, john.doe@example.com
-cust_002,Jane Smith,Multi-GPU Setup for Deep Learning,GPU, jane.smith@example.com
-cust_003,Albert Einstein,Single GPU for Scientific Simulations,GPU, albert.einstein@example.com
-cust_004,Marie Curie,Graphics Card for Rendering,GPU, marie.curie@example.com
-cust_005,Isaac Newton,Cluster of GPUs for Parallel Computing,GPU, isaac.newton@example.com
