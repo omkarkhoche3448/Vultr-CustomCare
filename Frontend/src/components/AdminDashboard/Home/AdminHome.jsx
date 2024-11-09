@@ -89,7 +89,7 @@ const AdminHome = () => {
                 title="Completed"
                 value={stats.completedTasks}
                 icon={CheckCircle2}
-                change="+8%"
+                change="+0%"
                 isPositive={true}
                 gradient="from-green-500 to-green-600"
               />

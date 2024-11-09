@@ -7,13 +7,14 @@
     "dev-client": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev-chatbot":"cd chatbot && php artisan serve --host=localhost --port=8000",
+    "dev-chatbot": "cd chatbot && php artisan serve --host=localhost --port=8000",
     "dev-server": "cd server && npm run dev",
-    "dev": "concurrently -n \"client,server,chatbot\" -c \"bgBlue,bgYellow,bgGreen\" \"npm run dev-client\" \"npm run dev-server\" \"npm run dev-chatbot\""
+    "dev": "concurrently -n \"client,server,chatbot\" -c \"bgCyan,bgMagenta,bgWhite\" \"npm run dev-client\" \"npm run dev-server\" \"npm run dev-chatbot\""
   },
   "dependencies": {
     "agora-react-uikit": "^1.2.0",
     "agora-rtc-sdk-ng": "^4.x.x",
+    "aws-sdk": "^2.1692.0",
     "concurrently": "^9.1.0",
     "lucide-react": "^0.454.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",

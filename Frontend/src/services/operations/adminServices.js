@@ -5,7 +5,6 @@ import { endpoints } from "../api";
 import { setCustomers } from "../../slices/customerSlice";
 import { setTasks, setError, setLoading } from "../../slices/taskSlice";
 
-
 export const BASE_URL =
   typeof import.meta.env !== "undefined" && import.meta.env.VITE_BASE_URL
     ? import.meta.env.VITE_BASE_URL
@@ -48,12 +47,14 @@ export const fetchTasks = (token) => async (dispatch) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    // console.log("Task response:", response.data);
-    dispatch(setTasks(response.data));
+
+    // Ensure response.data is an array
+    const tasksArray = Array.isArray(response.data) ? response.data : [];
+    dispatch(setTasks(tasksArray));
     dispatch(setLoading(false));
-    return response.data;
+    return tasksArray;
   } catch (error) {
-    // dispatch(setError("Failed to fetch tasks"));
+    dispatch(setError(error.message));
     dispatch(setLoading(false));
     throw error;
   }
@@ -70,36 +71,37 @@ export const fetchRepresentatives = async (token) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching representatives:", error);
-    throw new Error(
-      // error.response?.data?.message || "Failed to fetch representatives"
-    );
+    throw new Error();
+    // error.response?.data?.message || "Failed to fetch representatives"
   }
 };
 
-export const fetchCustomers = (token, filename = "customers.csv") => async (dispatch) => {
-  console.log("Fetching customers...");
-  try {
-    const storedCustomers = JSON.parse(localStorage.getItem("customers"));
-    if (storedCustomers?.length) {
-      dispatch(setCustomers(storedCustomers));
-      return storedCustomers;
+export const fetchCustomers =
+  (token, filename = "customers.csv") =>
+  async (dispatch) => {
+    console.log("Fetching customers...");
+    try {
+      const storedCustomers = JSON.parse(localStorage.getItem("customers"));
+      if (storedCustomers?.length) {
+        dispatch(setCustomers(storedCustomers));
+        return storedCustomers;
+      }
+
+      const response = await axios.get(GET_CUSTOMERS_API, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: { filename },
+      });
+
+      dispatch(setCustomers(response.data.data));
+      localStorage.setItem("customers", JSON.stringify(response.data.data));
+      return response.data;
+    } catch (error) {
+      dispatch(setError(error.message));
+      throw error;
     }
-
-    const response = await axios.get(GET_CUSTOMERS_API, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: { filename },
-    });
-
-    dispatch(setCustomers(response.data.data));
-    localStorage.setItem("customers", JSON.stringify(response.data.data));
-    return response.data;
-  } catch (error) {
-    dispatch(setError(error.message));
-    throw error;
-  }
-};
+  };
 
 export const uploadCSV = async (csvFile, token, onProgress) => {
   console.log("Uploading CSV...");
@@ -194,12 +196,12 @@ export const fetchStats = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
-        totalTasks: 245,
-        completedTasks: 182,
-        pendingTasks: 63,
-        teamMembers: 12,
+        totalTasks: 2,
+        completedTasks: 0,
+        pendingTasks: 2,
+        teamMembers: 2,
       });
-    }, 500); // Simulating a delay
+    }, 500);
   });
 };
 
@@ -300,4 +302,3 @@ export const fetchDeadlines = async () => {
     }, 500);
   });
 };
-

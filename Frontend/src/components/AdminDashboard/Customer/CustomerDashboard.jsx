@@ -40,10 +40,23 @@ const CustomerDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Extract unique categories from customers
-  const uniqueCategories = [
-    "all",
-    ...new Set(customers.map((customer) => customer.category)),
-  ];
+  let uniqueCategories = [];
+  try {
+    // Ensure customers is a valid array before processing
+    if (Array.isArray(customers)) {
+      uniqueCategories = [
+        "all",
+        ...new Set(customers.map((customer) => customer.category)),
+      ];
+    } else {
+      // If customers is not an array, fallback to a default empty category
+      console.warn("Invalid data: 'customers' is not an array.");
+      uniqueCategories = ["all"];
+    }
+  } catch (error) {
+    console.error("Error processing customer categories:", error);
+    uniqueCategories = ["all"];
+  }
 
   const itemsPerPage = 10;
 
@@ -94,7 +107,7 @@ const CustomerDashboard = () => {
       }
       return [...newFilters, category];
     });
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const handleRefresh = async () => {
@@ -246,7 +259,11 @@ const CustomerDashboard = () => {
 
       {/* Customers List (Table/Grid View) */}
       <div className="space-y-4">
-        {viewMode === "table" ? (
+        {customers.length === 0 ? (
+          <div className="flex justify-center items-center h-screen">
+            <Loader />
+          </div>
+        ) : viewMode === "table" ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -298,22 +315,10 @@ const CustomerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.length === 0 ? (
+                  {paginatedCustomers.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
-                      >
+                      <td colSpan={5}>
                         <Loader />
-                      </td>
-                    </tr>
-                  ) : paginatedCustomers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
-                      >
-                        No customers found
                       </td>
                     </tr>
                   ) : (
@@ -361,9 +366,7 @@ const CustomerDashboard = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <MoreVertical className="w-5 h-5" />
-                          </button>
+                          {/* Actions */}
                         </td>
                       </tr>
                     ))

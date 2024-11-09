@@ -2,15 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTasks } from "../../../services/operations/adminServices";
 import { formatDistance } from "date-fns";
+import {LoaderCircle} from "lucide-react";
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status = "" }) => {
   const statusColors = {
     COMPLETED: "bg-green-100 text-green-800",
     PENDING: "bg-yellow-100 text-yellow-800",
     IN_PROGRESS: "bg-blue-100 text-blue-800",
   };
 
-  const formattedStatus = status.replace("_", " ");
+  const formattedStatus = status ? status.replace("_", " ") : "Unknown Status";
 
   return (
     <span
@@ -92,6 +93,8 @@ const TaskDashboard = () => {
     return <span>{timeAgoText}</span>;
   }
 
+  console.log("filteredTasks", filteredTasks);
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mx-auto">
@@ -126,85 +129,52 @@ const TaskDashboard = () => {
         )}
 
         {!loading && (
-          <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Project
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assigned To
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Updated
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredTasks.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      className="px-6 py-4 text-center text-gray-500"
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[800px]">
+              {/* Header */}
+              <div className="grid grid-cols-5 gap-4 bg-gray-100 p-4 font-medium">
+                <div>Project</div>
+                <div>Description</div>
+                <div>Assigned To</div>
+                <div>Status</div>
+                <div>Last Updated</div>
+              </div>
+
+              {/* Tasks */}
+              {filteredTasks.length === 0 ? (
+                <div className="flex justify-center items-center h-full w-full py-8 mx-auto text-purple-600">
+                  <LoaderCircle className="w-8 h-8  animate-spin" />{" "}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="grid grid-cols-5 gap-4 p-4 hover:bg-gray-50"
                     >
-                      No tasks available.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTasks.map((task) => (
-                    <tr
-                      key={task._id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {task.projectTitle}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {task.description}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {task.assignedMembers
-                            ?.slice(0, 3)
-                            .map((member, index) => (
-                              <div
-                                key={index}
-                                className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-white relative"
-                              >
-                                <span className="text-purple-600 text-xs font-medium">
-                                  {member.name?.charAt(0)?.toUpperCase()}
-                                </span>
-                                <div className="absolute -right-12 top-2 text-sm  text-gray-900 w-full text-center">
-                                  {member.name}
-                                </div>
+                      <div className="truncate">{task.projectTitle}</div>
+                      <div className="truncate">{task.description}</div>
+                      <div className="flex space-x-1">
+                        {task.assignedMembers
+                          ?.slice(0, 3)
+                          .map((member, index) => (
+                            <div key={index} className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                                {member.name?.charAt(0)?.toUpperCase()}
                               </div>
-                            ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={task.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          <TimeAgo createdAt={task.createdAt} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                              <span className="ml-2">{member.name}</span>
+                            </div>
+                          ))}
+                      </div>
+                      <div>{task.status}</div>
+                      <div>
+                        <TimeAgo createdAt={task.createdAt} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

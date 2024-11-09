@@ -16,6 +16,7 @@
     "@reduxjs/toolkit": "^2.3.0",
     "agora-react-uikit": "^1.2.0",
     "agora-rtc-sdk-ng": "^4.22.2",
+    "aws-sdk": "^2.1692.0",
     "axios": "^1.7.7",
     "concurrently": "^9.1.0",
     "date-fns": "^4.1.0",

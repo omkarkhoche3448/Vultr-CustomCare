@@ -4,6 +4,7 @@ import {
   Clock,
   Users,
   AlertCircle,
+  CheckCircle,
   Phone,
   PhoneCall,
   ChevronRight,
@@ -14,6 +15,8 @@ import {
 
 function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [updatedCustomers, setUpdatedCustomers] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -32,6 +35,22 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredCustomers, currentPage]);
+
+
+  const handleIconClick = (customerId) => {
+    const updatedCustomerList = updatedCustomers.map((customer) => {
+      if (customer.id === customerId) {
+        return {
+          ...customer,
+          called: !customer.called, 
+        };
+      }
+      return customer;
+    });
+
+    setUpdatedCustomers(updatedCustomerList);
+  };
+
 
   return (
     <div
@@ -115,10 +134,18 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
                           : "bg-gray-200 text-gray-600"
                       }`}
                     >
-                      {customer.called ? (
-                        <PhoneCall size={18} />
+                      {customer.length > 0 ? (
+                        <PhoneCall
+                          size={18}
+                          className="bg-green-500 text-white p-1 rounded-full cursor-pointer"
+                          onClick={() => handleIconClick(customer.id)}
+                        />
                       ) : (
-                        <Phone size={18} />
+                        <CheckCircle
+                          size={18}
+                          className="bg-gray-300 text-white p-1 rounded-full cursor-pointer"
+                          onClick={() => handleIconClick(customer.id)}
+                        />
                       )}
                     </button>
                   </li>

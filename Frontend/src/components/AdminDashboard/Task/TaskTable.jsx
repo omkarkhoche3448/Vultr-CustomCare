@@ -10,6 +10,7 @@ import {
   MoreVertical,
   ChevronDown,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 const Loader = () => (
   <div className="flex justify-center items-center">
@@ -100,19 +101,38 @@ const TaskTable = ({
       );
     }
   };
+  const filteredTasks = useMemo(() => {
+    // Early return with empty array if tasks is invalid
+    if (!tasks || !Array.isArray(tasks)) {
+      console.warn("Tasks data is not in the expected format:", tasks);
+      return [];
+    }
 
-  const filteredTasks = React.useMemo(() => {
-    return tasks.filter((task) => {
-      const matchesSearch =
-        task.projectTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+    try {
+      return tasks.filter((task) => {
+        // Safely access properties with optional chaining and nullish coalescing
+        const projectTitle = task?.projectTitle ?? "";
+        const description = task?.description ?? "";
+        const customerName = task?.customerName ?? "";
+        const status = task?.status ?? "";
 
-      const matchesFilter =
-        filterStatus === "all" || task.status === filterStatus;
+        // Convert search term to lowercase once
+        const searchLower = searchTerm.toLowerCase();
 
-      return matchesSearch && matchesFilter;
-    });
+        const matchesSearch =
+          searchTerm === "" ||
+          [projectTitle, description, customerName].some((field) =>
+            field.toLowerCase().includes(searchLower)
+          );
+
+        const matchesFilter = filterStatus === "all" || status === filterStatus;
+
+        return matchesSearch && matchesFilter;
+      });
+    } catch (error) {
+      console.error("Error filtering tasks:", error);
+      return [];
+    }
   }, [tasks, searchTerm, filterStatus]);
 
   const sortedTasks = React.useMemo(() => {
@@ -142,6 +162,19 @@ const TaskTable = ({
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
+
+  if (!filteredTasks.length) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[200px] p-4 bg-gray-50 rounded-lg">
+        <div className="text-gray-600 font-medium mb-2">No tasks found</div>
+        <div className="text-gray-500 text-sm">
+          {searchTerm || filterStatus !== "all"
+            ? "Try adjusting your filters or search term"
+            : "No tasks available at the moment"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -188,157 +221,152 @@ const TaskTable = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      checked={selectedTasks.length === paginatedTasks.length}
-                      onChange={(e) => {
-                        handleTaskSelect(
-                          e.target.checked
-                            ? paginatedTasks.map((t) => t.id)
-                            : []
-                        );
-                      }}
-                    />
-                  </th>
-                  {[
-                    "Project Title",
-                    "Description",
-                    "Status",
-                    "Team Members",
-                  ].map((header) => (
-                    <th
+            <div className="lg:w-full md:w-full w-[130%]  ">
+              {/* Header */}
+              <div className="grid grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 bg-gray-50 p-4 items-center border-b border-gray-200">
+                <div>
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-purple-600"
+                    checked={selectedTasks.length === paginatedTasks.length}
+                    onChange={(e) => {
+                      handleTaskSelect(
+                        e.target.checked ? paginatedTasks.map((t) => t.id) : []
+                      );
+                    }}
+                  />
+                </div>
+
+                {["Project Title", "Description", "Status", "Team Members"].map(
+                  (header) => (
+                    <div
                       key={header}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() =>
                         handleSort(header.toLowerCase().replace(" ", ""))
                       }
+                      className="flex items-center space-x-1 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     >
-                      <div className="flex items-center space-x-1">
-                        <span>{header}</span>
-                        <ArrowUpDown
-                          className={`w-4 h-4 ${
-                            sortConfig.key ===
-                            header.toLowerCase().replace(" ", "")
-                              ? "text-purple-600"
-                              : "text-gray-400"
-                          }`}
-                        />
-                      </div>
-                    </th>
-                  ))}
-                  <th className="relative px-6 py-3">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                      <span>{header}</span>
+                      <ArrowUpDown
+                        className={`w-4 h-4 ${
+                          sortConfig.key ===
+                          header.toLowerCase().replace(" ", "")
+                            ? "text-purple-600"
+                            : "text-gray-400"
+                        }`}
+                      />
+                    </div>
+                  )
+                )}
+                <div className="sr-only">Actions</div>
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-gray-200">
                 {paginatedTasks.map((task) => (
-                  <tr
+                  <div
                     key={task.taskId}
-                    className={`hover:bg-gray-50 ${
+                    className={`grid grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 p-4 items-center ${
                       selectedTasks.includes(task.id)
                         ? "bg-gray-100"
                         : "bg-white"
-                    }`}
+                    } hover:bg-gray-50`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
                       <input
                         type="checkbox"
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        className="rounded border-gray-300 text-purple-600"
                         checked={selectedTasks.includes(task.id)}
                         onChange={() => handleTaskSelect(task.id)}
                       />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                          <span className="text-purple-600 font-medium">
-                            {task.projectTitle?.charAt(0)?.toUpperCase()}
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {task.projectTitle}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {task.keywords?.slice(0, 3).join(", ")}
+                        {task.keywords?.length > 3 && ", ..."}
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-900">
+                      {task.description?.length > 50
+                        ? `${task.description.substring(0, 50)}...`
+                        : task.description}
+                    </div>
+
+                    <div>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                ${
+                  task.status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : task.status === "in-progress"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+                      >
+                        {task.status}
+                      </span>
+                    </div>
+
+                    <div className="flex -space-x-2">
+                      {task.assignedMembers
+                        ?.slice(0, 3)
+                        .map((member, index) => (
+                          <div
+                            key={index}
+                            className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-white relative"
+                          >
+                            <span className="text-purple-600 text-xs font-medium">
+                              {member.name?.charAt(0)?.toUpperCase()}
+                            </span>
+                            <div className="absolute -right-12 top-2 text-sm text-gray-900 w-full text-center">
+                              {member.name}
+                            </div>
+                          </div>
+                        ))}
+                      {(task.assignedMembers?.length || 0) > 3 && (
+                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-white">
+                          <span className="text-gray-600 text-xs font-medium">
+                            +{task.assignedMembers.length - 3}
                           </span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {task.projectTitle}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {task.keywords?.slice(0, 3).join(", ")}
-                            {task.keywords?.length > 3 && ", ..."}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {task.description}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <TaskStatusBadge status={task.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex -space-x-2">
-                        {task.assignedMembers
-                          ?.slice(0, 3)
-                          .map((member, index) => (
-                            <div
-                              key={index}
-                              className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-white relative"
-                            >
-                              <span className="text-purple-600 text-xs font-medium">
-                                {member.name?.charAt(0)?.toUpperCase()}
-                              </span>
-                              <div className="absolute -right-12 top-2 text-sm  text-gray-900 w-full text-center">
-                                {member.name}
-                              </div>
-                            </div>
-                          ))}
-                        {(task.assignedMembers?.length || 0) > 3 && (
-                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-white">
-                            <span className="text-gray-600 text-xs font-medium">
-                              +{task.assignedMembers.length - 3}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <DropdownMenu
-                        align="right"
-                        trigger={
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                        }
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          /* Toggle dropdown */
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
                       >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                      <div className="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           onClick={() => onEdit?.(task)}
                         >
-                          <div className="flex items-center">
-                            <PencilIcon className="h-4 w-4 mr-2" />
-                            Edit
-                          </div>
+                          <PencilIcon className="h-4 w-4 mr-2" />
+                          Edit
                         </button>
                         <button
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                           onClick={() => onDelete?.(task.id)}
                         >
-                          <div className="flex items-center">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </div>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
                         </button>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         )}
       </div>
