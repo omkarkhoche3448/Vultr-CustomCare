@@ -14,111 +14,77 @@ const getAssignedTasks = async (req, res) => {
 
   try {
     const taskList = await vultrConfig.listObjectsV2(params).promise();
+    
+    console.log("Total tasks found in bucket:", taskList.Contents.length);
+
     const tasks = await Promise.all(
       taskList.Contents.map(async (file) => {
-        const task = await vultrConfig
-          .getObject({
-            Bucket: params.Bucket,
-            Key: file.Key,
-          })
-          .promise();
-        const taskData = JSON.parse(task.Body.toString());
+        try {
+          // Get each task's data
+          const taskObj = await vultrConfig
+            .getObject({
+              Bucket: params.Bucket,
+              Key: file.Key,
+            })
+            .promise();
 
-        // Check if the representative exists in teamMembers array
-        const isAssigned = taskData.teamMembers?.some(
-          (member) => member.name === representativeName
-        );
+          const taskData = JSON.parse(taskObj.Body.toString());
 
-        if (isAssigned) {
-          return {
-            taskId: taskData.taskId,
-            category: taskData.category,
-            customers: taskData.customers,
-            projectTitle: taskData.projectTitle,
-            description: taskData.description,
-            script: taskData.script,
-            keywords: taskData.keywords,
-            assignedMembers: taskData.assignedMembers,
-            status: taskData.status,
-            priority: taskData.priority,
-            assignedDate: taskData.assignedDate,
-            dueDate: taskData.dueDate,
-          };
+          // Debug log for each task being processed
+          // console.log("Processing task:", {
+          //   taskId: taskData.taskId,
+          //   assignedMembers: taskData.assignedMembers?.map(m => m.name) || []
+          // });
+
+          // Check if this task is assigned to the representative
+          const isAssigned = taskData.assignedMembers?.some(
+            (member) => member.name === representativeName
+          );
+
+          if (isAssigned && taskData.taskId) {
+            // Return only if task is assigned and has an ID
+            return {
+              category: taskData.category,
+              taskId: taskData.taskId, 
+              customers: taskData.customers,
+              projectTitle: taskData.projectTitle,
+              description: taskData.description,
+              script: taskData.script,
+              keywords: taskData.keywords,
+              assignedMembers: taskData.assignedMembers,
+              status: taskData.status,
+              priority: taskData.priority,
+              assignedDate: taskData.assignedDate,
+              dueDate: taskData.dueDate,
+            };
+          }
+          console.log()
+          return null;
+        } catch (error) {
+          return null;
         }
-        return null;
       })
     );
 
+    // Filter out null values and sort by creation date
     const assignedTasks = tasks.filter((task) => task !== null);
+    
+    // Sort tasks by creation date (newest first)
+    assignedTasks.sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
-    // Add debug logging
-    console.log("Representative Name:", representativeName);
-    console.log("Found Tasks:", assignedTasks.length);
+    // Final debug logging
+    // console.log(`Found ${assignedTasks.length} tasks assigned to ${representativeName}`);
 
     res.status(200).json(assignedTasks);
   } catch (error) {
     console.error("Error fetching assigned tasks:", error);
-    res.status(500).json({ message: "Failed to fetch assigned tasks" });
+    res.status(500).json({ 
+      message: "Failed to fetch assigned tasks",
+      error: error.message 
+    });
   }
 };
-
-// const getAssignedTasks = async (req, res) => {
-//   const representativeName = req.query.user.username;
-
-//   const params = {
-//     Bucket: task_bucket,
-//     Prefix: "tasks/",
-//   };
-
-//   try {
-//     const taskList = await vultrConfig.listObjectsV2(params).promise();
-//     const tasks = await Promise.all(
-//       taskList.Contents.map(async (file) => {
-//         const task = await vultrConfig
-//           .getObject({
-//             Bucket: params.Bucket,
-//             Key: file.Key,
-//           })
-//           .promise();
-//         const taskData = JSON.parse(task.Body.toString());
-
-//         // Check if the representative exists in assignedMembers array
-//         const isAssigned = taskData.assignedMembers?.some(
-//           (member) => member.name === representativeName
-//         );
-
-//         if (isAssigned) {
-//           return {
-//             taskId: taskData.taskId,
-//             category: taskData.category,
-//             customers: taskData.customers,
-//             projectTitle: taskData.projectTitle,
-//             description: taskData.description,
-//             script: taskData.script,
-//             keywords: taskData.keywords,
-//             assignedMembers: taskData.assignedMembers,
-//             status: taskData.status,
-//             priority: taskData.priority,
-//             assignedDate: taskData.assignedDate,
-//             dueDate: taskData.dueDate,
-//           };
-//         }
-//         return null;
-//       })
-//     );
-
-//     // Filter out null values (unassigned tasks)
-//     const assignedTasks = tasks.filter((task) => task !== null);
-
-//     // Add debug logging
-//     console.log("Representative Name:", representativeName);
-//     console.log("Found Tasks:", assignedTasks.length);
-
-//     res.status(200).json(assignedTasks);
-//   } catch (error) {
-//     console.error("Error fetching assigned tasks:", error);
-//     res.status(500).json({ message: "Failed to fetch assigned tasks" });
-//   }
-// };
 
 module.exports = { getAssignedTasks };

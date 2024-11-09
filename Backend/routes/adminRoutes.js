@@ -8,7 +8,8 @@ vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
 
 
 // Route to create a new task
-router.post('/create-task', authenticate, authorizeAdmin, adminController.createTask);
+// router.post('/create-task', authenticate, authorizeAdmin, adminController.createTask);
+router.post('/create-task',adminController.createTask);
 
 // Route to fetch all representatives
 // router.get('/representatives', authenticate, authorizeAdmin, adminController.getRepresentatives);
@@ -64,7 +65,7 @@ description
 */
 
 // router.post('/generate-script', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_script);
-router.post('/generate-script', authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_script);
+router.post('/generate-script', checkGenAIToken, adminController.generate_script);
 
 // route to get the keywords from the script
 
