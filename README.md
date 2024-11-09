@@ -4,21 +4,30 @@
 Vultr T2 is an innovative customer care platform that combines AI-powered interactions with real-time video communication. The platform enables efficient task management, customer engagement, and sales representative support through an integrated system of dashboards and AI features.
 
 # 🌟 Key Features
-#### Admin Dashboard                         
-#### Task creation with AI-generated scripts and keywords  
-#### CSV upload for customer data management           
-#### Representative assignment and monitoring  
-#### Data insights and customer pitch review     
-#### Representative Dashboard  
-#### Task and customer detail management  
-#### Agora-powered video call integration  
-#### Real-time transcription with keyword tracking   
-#### GenAI-powered hints and RAG chatbot support  
-#### Call transcription storage and analysis  
-#### Customer Interface                             
-#### Two-way video call functionality  
-#### Seamless representative engagement
-#### Real-time communication features  
+## 🤖 AI-Powered Task Management
+#### Smart task creation with automated scripts
+#### Data-driven customer assignment
+#### Intelligent workload distribution
+
+## 📊 Comprehensive Dashboard System
+#### Admin control center for oversight
+#### Representative workspace for task management
+#### Real-time performance monitoring
+
+## 🎥 Advanced Video Communication Suite
+#### Agora-powered two-way video calls
+#### Seamless customer-representative interactions
+#### Professional meeting environment
+
+## 🧠 Real-Time Intelligence Features
+#### Live call transcription
+#### AI-powered conversation hints
+#### Keyword tracking and analysis
+
+## 💬 Smart Support Infrastructure
+#### GenAI-powered RAG chatbot
+#### Call analysis and insights
+#### Stored transcriptions for quality assurance 
 
 # 🚀 Getting Started
 
