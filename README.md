@@ -4,14 +4,21 @@
 Vultr T2 is an innovative customer care platform that combines AI-powered interactions with real-time video communication. The platform enables efficient task management, customer engagement, and sales representative support through an integrated system of dashboards and AI features.
 
 # 🌟 Key Features
-#### Admin Dashboard                         #### Task creation with AI-generated scripts and keywords  
-#### CSV upload for customer data management           #### Representative assignment and monitoring  
-#### Data insights and customer pitch review           #### Representative Dashboard  
-#### Task and customer detail management               #### Agora-powered video call integration  
-#### Real-time transcription with keyword tracking     #### GenAI-powered hints and RAG chatbot support  
+#### Admin Dashboard                         
+#### Task creation with AI-generated scripts and keywords  
+#### CSV upload for customer data management           
+#### Representative assignment and monitoring  
+#### Data insights and customer pitch review     
+#### Representative Dashboard  
+#### Task and customer detail management  
+#### Agora-powered video call integration  
+#### Real-time transcription with keyword tracking   
+#### GenAI-powered hints and RAG chatbot support  
 #### Call transcription storage and analysis  
-#### Customer Interface                               #### Two-way video call functionality  
-#### Seamless representative engagement               #### Real-time communication features  
+#### Customer Interface                             
+#### Two-way video call functionality  
+#### Seamless representative engagement
+#### Real-time communication features  
 
 # 🚀 Getting Started
 
@@ -76,18 +83,18 @@ Vultr T2 is an innovative customer care platform that combines AI-powered intera
 Environment Variables .env
  
 ## Vultr Configuration
-#### VULTR_ENDPOINT=blr1.vultrobjects.com
-#### VULTR_ACCESS_KEY=your_access_key
-#### VULTR_SECRET_KEY=your_secret_key
+##### VULTR_ENDPOINT=blr1.vultrobjects.com
+##### VULTR_ACCESS_KEY=your_access_key
+##### VULTR_SECRET_KEY=your_secret_key
 
 ## Storage Buckets
-#### task_bucket=taskdatabucket-3
-#### user_bucket=userdatabucket-3
-#### csv_bucket=csvuploadbucket-3
+##### task_bucket=taskdatabucket-3
+##### user_bucket=userdatabucket-3
+##### csv_bucket=csvuploadbucket-3
 
 ## Application Settings
-#### PORT=3000
-#### JWT_SECRET=your_jwt_secret
+##### PORT=3000
+##### JWT_SECRET=your_jwt_secret
 
 
 # 📚 API Documentation
@@ -96,26 +103,26 @@ Environment Variables .env
 
 #### Authentication
  
-#### POST /api/auth/signup - Register admin users
-#### POST /api/auth/signup-representative - Register representatives
-#### POST /api/auth/login - User authentication
+##### POST /api/auth/signup - Register admin users
+##### POST /api/auth/signup-representative - Register representatives
+##### POST /api/auth/login - User authentication
 
 ## Admin Operations
  
-#### POST /api/admin/create-task - Create tasks
-#### GET /api/admin/tasks - Retrieve tasks
-#### GET /api/admin/representatives - List representatives
-#### POST /api/admin/upload-csv - Upload customer data
+##### POST /api/admin/create-task - Create tasks
+##### GET /api/admin/tasks - Retrieve tasks
+##### GET /api/admin/representatives - List representatives
+##### POST /api/admin/upload-csv - Upload customer data
 
 ## Representative Operations
  
-#### GET /api/representative/assigned-tasks - Get assigned tasks
+##### GET /api/representative/assigned-tasks - Get assigned tasks
 
 ## Laravel Backend Endpoints
  
-#### POST /generate-token - Generate chat session token
-#### POST /send-message - Send chat messages
-#### GET /session-messages/{session_token} - Retrieve session messages
+##### POST /generate-token - Generate chat session token
+##### POST /send-message - Send chat messages
+##### GET /session-messages/{session_token} - Retrieve session messages
 
 # 🤝 Contributing
 #### Fork the repository
