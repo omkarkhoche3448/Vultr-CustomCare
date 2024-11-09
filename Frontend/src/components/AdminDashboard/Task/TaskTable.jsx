@@ -165,12 +165,12 @@ const TaskTable = ({
 
   if (!filteredTasks.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[200px] p-4 bg-gray-50 rounded-lg">
+      <div className="flex flex-col items-center justify-center min-h-[200px] p-4 rounded-lg">
         <div className="text-gray-600 font-medium mb-2">No tasks found</div>
         <div className="text-gray-500 text-sm">
           {searchTerm || filterStatus !== "all"
             ? "Try adjusting your filters or search term"
-            : "No tasks available at the moment"}
+            : "Refresh to see all tasks"}
         </div>
       </div>
     );

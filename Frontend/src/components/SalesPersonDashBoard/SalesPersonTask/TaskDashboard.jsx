@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTasks } from "../../../services/operations/adminServices";
 import { formatDistance } from "date-fns";
-import {LoaderCircle} from "lucide-react";
+import { LoaderCircle } from "lucide-react";
+import { User } from "lucide-react";
 
 const StatusBadge = ({ status = "" }) => {
   const statusColors = {
@@ -129,52 +130,87 @@ const TaskDashboard = () => {
         )}
 
         {!loading && (
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-[800px]">
-              {/* Header */}
-              <div className="grid grid-cols-5 gap-4 bg-gray-100 p-4 font-medium">
-                <div>Project</div>
-                <div>Description</div>
-                <div>Assigned To</div>
-                <div>Status</div>
-                <div>Last Updated</div>
+          <div className="w-full">
+            {filteredTasks.length === 0 ? (
+              <div className="flex justify-center items-center h-full w-full py-8 mx-auto text-purple-600">
+                <LoaderCircle className="w-8 h-8  animate-spin" />{" "}
               </div>
-
-              {/* Tasks */}
-              {filteredTasks.length === 0 ? (
-                <div className="flex justify-center items-center h-full w-full py-8 mx-auto text-purple-600">
-                  <LoaderCircle className="w-8 h-8  animate-spin" />{" "}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200">
-                  {filteredTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="grid grid-cols-5 gap-4 p-4 hover:bg-gray-50"
-                    >
-                      <div className="truncate">{task.projectTitle}</div>
-                      <div className="truncate">{task.description}</div>
-                      <div className="flex space-x-1">
-                        {task.assignedMembers
-                          ?.slice(0, 3)
-                          .map((member, index) => (
-                            <div key={index} className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
-                                {member.name?.charAt(0)?.toUpperCase()}
-                              </div>
-                              <span className="ml-2">{member.name}</span>
-                            </div>
-                          ))}
-                      </div>
-                      <div>{task.status}</div>
-                      <div>
-                        <TimeAgo createdAt={task.createdAt} />
-                      </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[1000px]">
+                  {" "}
+                  {/* Minimum width to prevent squishing */}
+                  {/* Header */}
+                  <div className="grid grid-cols-5 bg-gray-100 gap-4 p-4 font-medium">
+                    <div className="text-sm font-medium text-gray-900">
+                      Project
                     </div>
-                  ))}
+                    <div className="text-sm font-medium text-gray-900">
+                      Description
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      Assigned To
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      Status
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      Created
+                    </div>
+                  </div>
+                  {/* Body */}
+                  <div className="divide-y divide-gray-200 bg-white">
+                    {tasks.map((task) => (
+                      <div
+                        key={task.taskId}
+                        className="grid grid-cols-5 gap-4 p-4 hover:bg-gray-50 items-center"
+                      >
+                        <div className="text-sm text-gray-900 truncate">
+                          {task.projectTitle}
+                        </div>
+
+                        <div className="text-sm text-gray-500 truncate">
+                          {task.description}
+                        </div>
+
+                        <div className="flex space-x-4">
+                          {task.assignedMembers
+                            ?.slice(0, 3)
+                            .map((member, index) => (
+                              <div key={index} className="flex items-center">
+                                <div className="h-8 w-8 rounded-full bg-purple-300 flex items-center justify-center text-white">
+                                  <User size={20} />
+                                </div>
+                                <span className="ml-2 text-sm font-medium text-gray-900">
+                                  {member.name}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+
+                        <div>
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                              task.status.toLowerCase() === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : task.status.toLowerCase() === "in progress"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {task.status}
+                          </span>
+                        </div>
+
+                        <div className="text-sm text-gray-500 whitespace-nowrap">
+                          <TimeAgo createdAt={task.createdAt} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>

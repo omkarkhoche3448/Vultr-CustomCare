@@ -37,27 +37,28 @@ export const createTask = async (taskData, token) => {
   }
 };
 
-export const fetchTasks = (token) => async (dispatch) => {
-  console.log("Token:", token);
-  console.log("Fetching tasks...");
-  try {
-    dispatch(setLoading(true));
-    const response = await axios.get(GET_ADMIN_TASKS_API, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    // Ensure response.data is an array
-    const tasksArray = Array.isArray(response.data) ? response.data : [];
-    dispatch(setTasks(tasksArray));
-    dispatch(setLoading(false));
-    return tasksArray;
-  } catch (error) {
-    dispatch(setError(error.message));
-    dispatch(setLoading(false));
-    throw error;
-  }
+export const fetchTasks = (token) => {
+  return async (dispatch) => {
+    console.log("Token:", token);
+    console.log("Fetching tasks...");
+    try {
+      dispatch(setLoading(true));
+      const response = await axios.get(GET_ADMIN_TASKS_API, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // Ensure response.data is an array
+      const tasksArray = Array.isArray(response.data) ? response.data : [];
+      dispatch(setTasks(tasksArray));
+      dispatch(setLoading(false));
+      return tasksArray;
+    } catch (error) {
+      dispatch(setError(error.message));
+      dispatch(setLoading(false));
+      throw error;
+    }
+  };
 };
 
 export const fetchRepresentatives = async (token) => {

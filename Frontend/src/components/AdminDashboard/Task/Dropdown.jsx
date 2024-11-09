@@ -95,11 +95,12 @@ export const CustomerSelect = ({
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => {
               const isSelected = selected.some(
-                (customer) => customer.id === option.value
+                (customer) => customer.label === option.value
               );
+              const uniqueKey = `${option.customer.customername}-${option.customer.email}` || index;
               return (
                 <div
-                  key={option.value}
+                  key={uniqueKey}
                   onClick={() => handleSelect(option.customer)}
                   className={`cursor-pointer hover:bg-gray-100 p-3 flex items-center gap-2 ${
                     isSelected ? "bg-blue-100" : ""
@@ -180,7 +181,7 @@ export const TeamMemberSelect = ({ teamMembers, value, onChange, error }) => {
           {filteredMembers.length > 0 ? (
             filteredMembers.map((member) => (
               <div
-                key={member.id}
+                key={member.email}
                 onClick={() => handleSelect(member)}
                 className="cursor-pointer hover:bg-gray-100 p-3 flex items-center gap-2"
               >

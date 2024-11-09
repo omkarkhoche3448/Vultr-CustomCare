@@ -32,40 +32,26 @@ const TaskDashboard = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const uniqueCategories = ["all", "high", "medium", "low"];
 
-  // const handleRedirect = (task) => {
-  //   const taskId = task.taskId;
-  //   const projectTitle = task.projectTitle;
-
-  //   const redirectUrl = `http://localhost:5174/dashboard?email=${encodeURIComponent(
-  //     userEmail
-  //   )}&taskId=${encodeURIComponent(taskId)}&projectTitle=${encodeURIComponent(
-  //     projectTitle
-  //   )}`;
-
-  //   window.location.href = redirectUrl;
-  // };
-
   const handleRedirect = (task) => {
     const taskId = task.taskId;
     const projectTitle = task.projectTitle;
 
-    
-  
     // Assuming `task.customer` is an array of customer objects with an `email` property
-    const customerEmails = task.customers.map((customer) => customer.email).join(",");
+    const customerEmails = task.customers
+      .map((customer) => customer.email)
+      .join(",");
     console.log("customerEmails:", customerEmails);
-  
+
     // Construct the URL with the customer emails as a parameter
     const redirectUrl = `http://localhost:5174/dashboard?email=${encodeURIComponent(
       userEmail
     )}&taskId=${encodeURIComponent(taskId)}&projectTitle=${encodeURIComponent(
       projectTitle
     )}&customerEmails=${encodeURIComponent(customerEmails)}`;
-  
+
     // Redirect to the new app (Running on a different port)
     window.location.href = redirectUrl;
   };
-  
 
   useEffect(() => {
     if (token && user) {
@@ -134,6 +120,13 @@ const TaskDashboard = () => {
       default:
         return "text-gray-700 border-gray-200 bg-gray-50";
     }
+  };
+
+  const toggleExpand = (taskId) => {
+    setExpandedTasks((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
   };
 
   return (
@@ -339,11 +332,33 @@ const TaskDashboard = () => {
                         <h4 className="text-sm font-semibold text-gray-700 mb-1">
                           Script/Notes
                         </h4>
-                        <p className="text-sm text-gray-600">
-                          {task.script?.length > 400
-                            ? `${task.script.slice(0, 400)}...`
-                            : task.script}
-                        </p>
+                        <div className="text-sm text-gray-600">
+                          <p
+                            className={`${
+                              !expandedTasks[task.id] && "line-clamp-3"
+                            }`}
+                          >
+                            {task.script}
+                          </p>
+                          {task.script?.length > 400 && (
+                            <button
+                              onClick={() => toggleExpand(task.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium mt-1 flex items-center gap-1"
+                            >
+                              {expandedTasks[task.id] ? (
+                                <>
+                                  Show Less
+                                  <ChevronUp size={16} />
+                                </>
+                              ) : (
+                                <>
+                                  See More
+                                  <ChevronDown size={16} />
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

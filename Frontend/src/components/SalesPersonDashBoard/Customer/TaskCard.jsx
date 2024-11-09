@@ -1,24 +1,52 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Calendar,
   Clock,
   Users,
   AlertCircle,
   CheckCircle,
-  Phone,
-  PhoneCall,
+  XCircle,
   ChevronRight,
   ChevronLeft,
   Search,
   ChevronDown,
 } from "lucide-react";
 
-function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
+function TaskCard({ task, isActive: propIsActive, onToggle }) {
+  // Generate a unique key for this task's state in localStorage
+  const storageKey = `taskCard_${task.projectTitle.replace(/\s+/g, "_")}`;
+
+  // Initialize state from localStorage or prop
+  const [isActiveInternal, setIsActiveInternal] = useState(() => {
+    const stored = localStorage.getItem(storageKey);
+    return stored !== null ? JSON.parse(stored) : propIsActive;
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [updatedCustomers, setUpdatedCustomers] = useState([]);
+  const [customerStatus, setCustomerStatus] = useState(
+    task.customers.reduce(
+      (acc, customer) => ({
+        ...acc,
+        [customer.email]: customer.status || false,
+      }),
+      {}
+    )
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Sync internal state with localStorage
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(isActiveInternal));
+  }, [isActiveInternal, storageKey]);
+
+  // Handle toggle with local state
+  const handleToggle = () => {
+    const newState = !isActiveInternal;
+    setIsActiveInternal(newState);
+    onToggle && onToggle(newState);
+  };
 
   const filteredCustomers = useMemo(() => {
     return task.customers.filter((customer) =>
@@ -27,8 +55,8 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
   }, [task.customers, searchTerm]);
 
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const calledCount = task.customers.filter(
-    (customer) => customer.called
+  const completedCount = Object.values(customerStatus).filter(
+    (status) => status
   ).length;
 
   const currentCustomers = useMemo(() => {
@@ -36,32 +64,27 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
     return filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredCustomers, currentPage]);
 
-
-  const handleIconClick = (customerId) => {
-    const updatedCustomerList = updatedCustomers.map((customer) => {
-      if (customer.id === customerId) {
-        return {
-          ...customer,
-          called: !customer.called, 
-        };
-      }
-      return customer;
-    });
-
-    setUpdatedCustomers(updatedCustomerList);
+  const handleCustomerToggle = (email) => {
+    setCustomerStatus((prev) => ({
+      ...prev,
+      [email]: !prev[email],
+    }));
   };
-
 
   return (
     <div
       className={`bg-white shadow-lg rounded-lg overflow-hidden mb-4 transition-all duration-300 ${
-        isActive ? "w-full" : "w-80"
+        isActiveInternal ? "w-full" : "w-80"
       }`}
     >
-      <div className=" bg-gray-200 p-4 text-black flex justify-between items-center">
+      <div className="bg-gray-200 p-4 text-black flex justify-between items-center">
         <h2 className="text-xl font-bold truncate">{task.projectTitle}</h2>
-        <button onClick={onToggle} className=" focus:outline-none">
-          {isActive ? <ChevronRight size={24} /> : <ChevronDown size={24} />}
+        <button onClick={handleToggle} className="focus:outline-none">
+          {isActiveInternal ? (
+            <ChevronRight size={24} />
+          ) : (
+            <ChevronDown size={24} />
+          )}
         </button>
       </div>
 
@@ -86,7 +109,7 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
           </div>
         </div>
 
-        {isActive && (
+        {isActiveInternal && (
           <>
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
@@ -94,7 +117,7 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
                   <Users className="mr-2" /> Customers
                 </span>
                 <span className="text-sm text-gray-600">
-                  Called: {calledCount}/{task.customers.length}
+                  Completed: {completedCount}/{task.customers.length}
                 </span>
               </h3>
               <div className="mb-4 relative">
@@ -111,8 +134,11 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
                 />
               </div>
               <ul className="bg-gray-50 rounded-lg p-2 space-y-2 max-h-80 overflow-y-auto">
-                {currentCustomers.map((customer, index) => (
-                  <li key={index} className="flex items-center justify-between">
+                {currentCustomers.map((customer) => (
+                  <li
+                    key={customer.email}
+                    className="flex items-center justify-between p-2 hover:bg-gray-100 rounded"
+                  >
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold mr-3">
                         {customer.email[0].toUpperCase()}
@@ -120,32 +146,13 @@ function TaskCard({ task, onCustomerCall, isActive, onToggle }) {
                       <span className="text-sm">{customer.email}</span>
                     </div>
                     <button
-                      onClick={() =>
-                        onCustomerCall(
-                          task.taskId,
-                          task.customers.findIndex(
-                            (c) => c.email === customer.email
-                          )
-                        )
-                      }
-                      className={`p-2 rounded-full ${
-                        customer.called
-                          ? "bg-green-500 text-white"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
+                      onClick={() => handleCustomerToggle(customer.email)}
+                      className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                     >
-                      {customer.length > 0 ? (
-                        <PhoneCall
-                          size={18}
-                          className="bg-green-500 text-white p-1 rounded-full cursor-pointer"
-                          onClick={() => handleIconClick(customer.id)}
-                        />
+                      {customerStatus[customer.email] ? (
+                        <CheckCircle className="text-green-500" size={20} />
                       ) : (
-                        <CheckCircle
-                          size={18}
-                          className="bg-gray-300 text-white p-1 rounded-full cursor-pointer"
-                          onClick={() => handleIconClick(customer.id)}
-                        />
+                        <XCircle className="text-gray-400" size={20} />
                       )}
                     </button>
                   </li>

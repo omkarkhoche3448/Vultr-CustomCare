@@ -177,6 +177,24 @@ const CustomerDashboard = () => {
     </div>
   );
 
+
+if (error) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Customers</h2>
+        <p className="text-gray-600">{error}</p>
+        <button
+          onClick={() => dispatch(fetchCustomers(token))}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className="space-y-6 p-6  min-h-screen">
       {/* Header Section */}

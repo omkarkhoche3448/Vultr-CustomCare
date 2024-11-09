@@ -1,28 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import Select from "react-select";
-import {
-  X,
-  UserCircle,
-  LoaderCircle,
-  Plus,
-  FileText,
-  ChevronDown,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import Select from 'react-select';
+import { X, UserCircle, LoaderCircle, Plus, Sparkles, FileText,ArrowRight  } from "lucide-react";
 import {
   generateScript,
   generateKeywords,
+  createTask,
 } from "../../../services/operations/adminServices";
 import { toast } from "react-hot-toast";
-import { createTask } from "../../../services/operations/adminServices";
 import { CustomerSelect, TeamMemberSelect } from "./Dropdown";
+import Loader from "../Loader";
 
-const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT;
-const GenaiScriptPrompt = import.meta.env.VITE_GENERATE_SCRIPT;
-const GenaiKeywordPrompt = import.meta.env.VITE_GENERATE_KEYWORDS;
+const GenaiToken = import.meta.env.VITE_VULTR_LLAMA_ENDPOINT ?? "";
+const GenaiScriptPrompt = import.meta.env.VITE_GENERATE_SCRIPT ?? "";
+const GenaiKeywordPrompt = import.meta.env.VITE_GENERATE_KEYWORDS ?? "";
+
+if (!GenaiToken || !GenaiScriptPrompt || !GenaiKeywordPrompt) {
+  console.error("Missing required environment variables");
+}
 
 const TaskForm = ({
   task = {},
@@ -36,6 +32,20 @@ const TaskForm = ({
   // console.log("task:", task);
   // console.log("teamMembers:", teamMembers);
   // console.log("customers:", customers);
+
+  // Initialize state
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentKeyword, setCurrentKeyword] = useState("");
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const [error, setError] = useState("");
+  const [availableCustomers, setAvailableCustomers] = useState([]);
+  const [selectAllChecked, setSelectAllChecked] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token);
+
   const defaultValues = {
     category: task?.category || "",
     customers: task?.customers || [],
@@ -62,15 +72,6 @@ const TaskForm = ({
     defaultValues,
     mode: "onChange",
   });
-  const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.token);
-
-  const [currentKeyword, setCurrentKeyword] = useState("");
-  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
-  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
-  const [error, setError] = useState("");
-  const [availableCustomers, setAvailableCustomers] = useState(customers);
-  const [selectAllChecked, setSelectAllChecked] = useState(false);
 
   const keywords = watch("keywords");
   const description = watch("description");
@@ -78,9 +79,15 @@ const TaskForm = ({
   const selectedCategory = watch("category");
   const selectedCustomers = watch("customers");
 
-  const categoryOptions = React.useMemo(() => {
+  const categoryOptions = useMemo(() => {
+    if (!Array.isArray(customers) || customers.length === 0) return [];
+
     const uniqueCategories = [
-      ...new Set(customers.map((customer) => customer.category)),
+      ...new Set(
+        customers
+          .filter((customer) => customer && customer.category)
+          .map((customer) => customer.category)
+      ),
     ];
 
     return uniqueCategories
@@ -91,6 +98,54 @@ const TaskForm = ({
           category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(),
       }));
   }, [customers]);
+
+  useEffect(() => {
+    const initializeData = () => {
+      setIsLoading(true);
+      try {
+        if (!Array.isArray(customers)) {
+          throw new Error("Customers data is not in the correct format");
+        }
+
+        const validCustomers = customers.filter(
+          (customer) =>
+            customer && typeof customer === "object" && customer.category
+        );
+
+        setAvailableCustomers(validCustomers);
+        setIsInitialized(true);
+      } catch (error) {
+        setError(error.message);
+        console.error("Initialization error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [customers]);
+
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-red-500 mb-4">Error loading customers data</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
 
   const handleSelectAllCustomers = () => {
     if (!selectedCategory) return;
@@ -274,18 +329,6 @@ const TaskForm = ({
       console.error("Failed to create task:", error);
     }
   };
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error, { duration: 4000, position: "top-right" });
-    }
-  }, [error]);
-
-  useEffect(() => {
-    // console.log('Available customers:', customers);
-    setAvailableCustomers(customers);
-  }, [customers]);
-
 
   return (
     <div>

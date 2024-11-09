@@ -1,37 +1,56 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { LogOut, User, Bell, Menu, X } from 'lucide-react';
- 
+import React, { useState, useEffect } from "react";
+import { LogOut, User, Bell, Menu, X } from "lucide-react";
+import TaskNotification from "./TaskNotification";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchRepresentativeTasks } from "../../services/operations/representativeServices";
+
 const DashboardHeader = ({
-  title = 'Dashboard',
+  title = "Dashboard",
   titleColor,
   showNotifications = true,
   onLogout,
   customActions,
-  logoComponent
+  logoComponent,
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
+  const dispatch = useDispatch();
+  const {
+    assignedTasks: tasks,
+    loading,
+    error,
+  } = useSelector((state) => state.representatives);
+
   // Get authentication state from Redux
   const { user } = useSelector((state) => state.auth);
-  
+  const token = useSelector((state) => state.auth.token);
+  const RepresentativeEmail = user.email;
+
+  useEffect(() => {
+    if (token && user) {
+      dispatch(fetchRepresentativeTasks(token, user));
+    }
+  }, [dispatch, token, user]);
+
+  console.log("tasksform header:", tasks);
+
   // Helper function to get user's initials for avatar
   const getUserInitials = () => {
-    if (!user?.username) return '?';
+    if (!user?.username) return "?";
     return user.username
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   // Helper function to format display name
   const getDisplayName = () => {
-    if (!user?.username) return 'Guest';
-    return user.username.length > 20 
-      ? `${user.username.slice(0, 20)}...` 
+    if (!user?.username) return "Guest";
+    return user.username.length > 20
+      ? `${user.username.slice(0, 20)}...`
       : user.username;
   };
 
@@ -53,15 +72,10 @@ const DashboardHeader = ({
 
             {/* Notification Bell */}
             {showNotifications && (
-              <button 
-                className="p-2 rounded-full hover:bg-gray-100 relative"
-                aria-label="Notifications"
-              >
-                <Bell className="h-6 w-6 text-gray-600" />
-                {user?.hasNotifications && (
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
-                )}
-              </button>
+              <TaskNotification
+                assignedTasks={tasks}
+                representativeEmail={RepresentativeEmail}
+              />
             )}
 
             {/* User Profile */}
@@ -74,8 +88,8 @@ const DashboardHeader = ({
               >
                 <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
                   {user?.avatarUrl ? (
-                    <img 
-                      src={user.avatarUrl} 
+                    <img
+                      src={user.avatarUrl}
                       alt={user.username}
                       className="h-8 w-8 rounded-full object-cover"
                     />
@@ -90,14 +104,14 @@ const DashboardHeader = ({
                     {getDisplayName()}
                   </p>
                   <p className="text-xs text-gray-500 capitalize">
-                    {user?.role || 'User'}
+                    {user?.role || "User"}
                   </p>
                 </div>
               </button>
 
               {/* Profile Dropdown */}
               {isProfileOpen && (
-                <div 
+                <div
                   className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
                   role="menu"
                   aria-orientation="vertical"
@@ -144,8 +158,8 @@ const DashboardHeader = ({
               <div className="flex items-center space-x-3 p-3">
                 <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
                   {user?.avatarUrl ? (
-                    <img 
-                      src={user.avatarUrl} 
+                    <img
+                      src={user.avatarUrl}
                       alt={user.username}
                       className="h-8 w-8 rounded-full object-cover"
                     />
@@ -160,7 +174,7 @@ const DashboardHeader = ({
                     {getDisplayName()}
                   </p>
                   <p className="text-xs text-gray-500 capitalize">
-                    {user?.role || 'User'}
+                    {user?.role || "User"}
                   </p>
                   {user?.email && (
                     <p className="text-xs text-gray-500">{user.email}</p>
