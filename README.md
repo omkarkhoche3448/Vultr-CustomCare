@@ -36,38 +36,38 @@ MySQL Instance
 ## Installation
  
  
-# Clone the repository
+## Clone the repository
 git clone https://github.com/barhatemanthan/vultr_t2.git
 
 
-# Install AiCall dependencies
+## Install AiCall dependencies
 cd ./AiCall
 npm i
 
 
-# Install Chatbot dependencies
+## Install Chatbot dependencies
 cd ./chatbot
 npm i
 composer install
 php artisan install:api
 
 
-# Install Server dependencies
+## Install Server dependencies
 cd ../server
 npm i
 
 
-# Install Backend dependencies
+## Install Backend dependencies
 cd ../Backend
 npm i
 
 
-# Install Frontend dependencies
+## Install Frontend dependencies
 cd ../Frontend
 npm i
 
 
-# PHP & Laravel & Compose Configuration
+## PHP & Laravel & Compose Configuration
 Install PHP from official website
 Download Composer
 Create PHP configuration directory at C://Program Files//php-8.2.25
@@ -77,51 +77,51 @@ Configure php.ini - Enable pdo_mysql extension
 #💻 Usage
  
  
-# Start all services concurrently
+## Start all services concurrently
 cd Frontend
 npm run dev
 
-# ⚙️ Configuration
+## ⚙️ Configuration
 Environment Variables
 env
  
-# Vultr Configuration
+### Vultr Configuration
 VULTR_ENDPOINT=blr1.vultrobjects.com
 VULTR_ACCESS_KEY=your_access_key
 VULTR_SECRET_KEY=your_secret_key
 
-# Storage Buckets
+### Storage Buckets
 task_bucket=taskdatabucket-3
 user_bucket=userdatabucket-3
 csv_bucket=csvuploadbucket-3
 
-# Application Settings
+### Application Settings
 PORT=3000
 JWT_SECRET=your_jwt_secret
 
 
 # 📚 API Documentation
 
-# Node.js Backend Endpoints
+## Node.js Backend Endpoints
 
-Authentication
+### Authentication
  
 POST /api/auth/signup - Register admin users
 POST /api/auth/signup-representative - Register representatives
 POST /api/auth/login - User authentication
 
-Admin Operations
+### Admin Operations
  
 POST /api/admin/create-task - Create tasks
 GET /api/admin/tasks - Retrieve tasks
 GET /api/admin/representatives - List representatives
 POST /api/admin/upload-csv - Upload customer data
 
-Representative Operations
+### Representative Operations
  
 GET /api/representative/assigned-tasks - Get assigned tasks
 
-Laravel Backend Endpoints
+### Laravel Backend Endpoints
  
 POST /generate-token - Generate chat session token
 POST /send-message - Send chat messages
