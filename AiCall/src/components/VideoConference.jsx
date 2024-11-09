@@ -119,7 +119,7 @@ const VideoConference = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "47QNM43RTTG3D52ZECKSIJDLUY5L242XJCGQ",
+            Authorization: "7F567HVTIMKFPVM27ZFPQ73ZIDLLNTMB6KRQ",
           },
           body: JSON.stringify({
             model: "llama2-13b-chat-Q5_K_M",

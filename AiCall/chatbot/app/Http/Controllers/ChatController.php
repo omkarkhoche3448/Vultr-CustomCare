@@ -38,7 +38,7 @@ class ChatController extends Controller
                 'verify' => storage_path('cacert.pem'),
             ])->withHeaders([
                 'Content-Type' => 'application/json',
-                'Authorization' => "QWUXKNKMMAJDQTIWR665CICJBBXXPS2H7BXA"
+                'Authorization' => "7F567HVTIMKFPVM27ZFPQ73ZIDLLNTMB6KRQ"
             ])->post('https://api.vultrinference.com/v1/chat/completions', [
                 'model' => 'llama2-13b-chat-Q5_K_M',
                 'messages' => $messages,

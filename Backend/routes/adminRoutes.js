@@ -69,6 +69,6 @@ router.post('/generate-script', checkGenAIToken, adminController.generate_script
 
 // route to get the keywords from the script
 
-router.post('/generate-keywords', bodyParser.json(), authenticate, authorizeAdmin, checkGenAIToken, adminController.generate_keywords);
+router.post('/generate-keywords', bodyParser.json(), checkGenAIToken, adminController.generate_keywords);
 
 module.exports = router;
