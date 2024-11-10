@@ -25,7 +25,8 @@ const DashboardHeader = ({
   // Get authentication state from Redux
   const { user } = useSelector((state) => state.auth);
   const token = useSelector((state) => state.auth.token);
-  const RepresentativeEmail = user.email;
+  console.log("user:", user);
+  const RepresentativeEmail = user.username;
 
   useEffect(() => {
     if (token && user) {

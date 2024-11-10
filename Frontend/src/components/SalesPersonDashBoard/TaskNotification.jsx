@@ -1,13 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 
+
 const TaskNotification = ({ assignedTasks, representativeEmail }) => {
+
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [expandedTask, setExpandedTask] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const notificationRef = useRef(null);
   const processedTaskIds = useRef(new Set());
+
+  // Add browser notification permission check
+  useEffect(() => {
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    setIsLoading(false);
+  }, []);
 
   // Process new tasks and create notifications
   useEffect(() => {
@@ -15,45 +26,67 @@ const TaskNotification = ({ assignedTasks, representativeEmail }) => {
       return;
     }
 
-    // Filter new tasks
-    const newTasks = assignedTasks.filter((task) => {
-      const isNewTask = !processedTaskIds.current.has(task.taskId);
-      const isAssignedToMe = task.assignedMembers?.some(
-        (member) => member.name === representativeEmail
-      );
-      return isNewTask && isAssignedToMe;
-    });
+    // Sort tasks by assigned date (newest first)
+    const sortedTasks = [...assignedTasks].sort(
+      (a, b) => new Date(b.assignedDate) - new Date(a.assignedDate)
+    );
+    console.log("sortedTasks:", sortedTasks);
+
+    // Filter new tasks assigned to current user
+    const newTasks = sortedTasks
+      .filter((task) => {
+        const isNewTask = !processedTaskIds.current.has(task.taskId);
+        const isAssignedToMe = task.assignedMembers?.some(
+          (member) => member.name === representativeEmail
+        );
+        console.log("isNewTask:", isNewTask);
+        console.log("isAssignedToMe:", isAssignedToMe);
+        // Check if task was assigned within last 24 hours
+        const isRecent =
+          new Date(task.assignedDate) >
+          new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return isNewTask && isAssignedToMe && isRecent;
+      })
+      .slice(0, 5); // Limit to 5 most recent notifications
+
+      console.log("newTasks:", newTasks);
 
     if (newTasks.length > 0) {
-      const newNotifications = newTasks.map((task) => {
-        // Mark task as processed
-        processedTaskIds.current.add(task.taskId);
+      // Create notifications for new tasks
+      const newNotifications = newTasks.map((task) => ({
+        id: task.taskId,
+        projectTitle: task.projectTitle,
+        description: task.description,
+        priority: task.priority?.toLowerCase() || "normal",
+        status: task.status,
+        category: task.category,
+        customers: task.customers,
+        keywords: task.keywords,
+        assignedDate: task.assignedDate,
+        dueDate: task.dueDate,
+        isRead: false,
+      }));
 
-        return {
-          id: task.taskId,
-          projectTitle: task.projectTitle,
-          description: task.description,
-          priority: task.priority?.toLowerCase() || "normal",
-          status: task.status,
-          category: task.category,
-          customers: task.customers,
-          keywords: task.keywords,
-          assignedDate: task.assignedDate,
-          dueDate: task.dueDate,
-          isRead: false,
-        };
-      });
+      // Add new notifications and limit total to 10
+      setNotifications((prev) => [...newNotifications, ...prev].slice(0, 10));
 
-      setNotifications((prev) => [...newNotifications, ...prev]);
+      // Mark tasks as processed
+      newTasks.forEach((task) => processedTaskIds.current.add(task.taskId));
+
       setHasUnread(true);
 
-      // Optional: Show browser notification
+      // Show browser notifications
       if (Notification.permission === "granted") {
-        newNotifications.forEach((notification) => {
-          new Notification("New Task Assigned", {
-            body: `New ${notification.category} task: ${notification.projectTitle}`,
+        try {
+          newTasks.forEach((task) => {
+            new Notification("New Task Assigned", {
+              body: `${task.projectTitle} - Due: ${formatDate(task.dueDate)}`,
+              icon: "/notification-icon.png", // Add your icon path
+            });
           });
-        });
+        } catch (error) {
+          console.error("Error showing browser notification:", error);
+        }
       }
     }
   }, [assignedTasks, representativeEmail]);
@@ -72,6 +105,21 @@ const TaskNotification = ({ assignedTasks, representativeEmail }) => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Cleanup old notifications
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      setNotifications((prev) =>
+        prev.filter(
+          (notification) =>
+            new Date(notification.assignedDate) >
+            new Date(Date.now() - 24 * 60 * 60 * 1000)
+        )
+      );
+    }, 60 * 60 * 1000); // Check every hour
+
+    return () => clearInterval(cleanup);
   }, []);
 
   const markAsRead = (notificationId) => {
@@ -103,32 +151,44 @@ const TaskNotification = ({ assignedTasks, representativeEmail }) => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "No date";
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) throw new Error("Invalid date");
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (error) {
-      return dateString;
+      console.error("Date parsing error:", error);
+      return "Invalid date";
     }
   };
 
   // Priority styles mapping
   const priorityStyles = {
-    high: "text-red-600 bg-red-50",
-    medium: "text-yellow-600 bg-yellow-50",
-    normal: "text-blue-600 bg-blue-50",
-    low: "text-green-600 bg-green-50",
+    high: "text-red-600 ",
+    medium: "text-yellow-600 ",
+    low: "text-green-600 ",
   };
 
   const statusStyles = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    IN_PROGRESS: "bg-blue-100 text-blue-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    CANCELLED: "bg-red-100 text-red-800",
+    PENDING: " text-yellow-800",
+    IN_PROGRESS: " text-blue-800",
+    COMPLETED: " text-green-800",
+    CANCELLED: " text-red-800",
   };
+
+  if (isLoading) {
+    return (
+      <div className="relative">
+        <Bell className="h-6 w-6 text-gray-400 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div ref={notificationRef} className="relative">
@@ -173,26 +233,6 @@ const TaskNotification = ({ assignedTasks, representativeEmail }) => {
                 >
                   <div className="flex justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            priorityStyles[notification.priority.toLowerCase()]
-                          }`}
-                        >
-                          {notification.priority}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            statusStyles[notification.status]
-                          }`}
-                        >
-                          {notification.status}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {notification.category.toUpperCase()}
-                        </span>
-                      </div>
-
                       <h3 className="text-sm font-medium text-gray-800">
                         {notification.projectTitle}
                       </h3>
@@ -200,6 +240,26 @@ const TaskNotification = ({ assignedTasks, representativeEmail }) => {
                       <p className="text-xs text-gray-500 mt-1">
                         Due: {formatDate(notification.dueDate)}
                       </p>
+
+                      <div className="flex items-center gap-2 mb-2 mt-1">
+                        <span
+                          className={`text-xs rounded-full ${
+                            priorityStyles[notification.priority.toLowerCase()]
+                          }`}
+                        >
+                          {notification.priority}
+                        </span>
+                        <span
+                          className={`text-xs rounded-full ${
+                            statusStyles[notification.status]
+                          }`}
+                        >
+                          {notification.status.toLowerCase()}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {notification.category.toLowerCase()}
+                        </span>
+                      </div>
 
                       {expandedTask === notification.id && (
                         <div className="mt-3 space-y-2">
