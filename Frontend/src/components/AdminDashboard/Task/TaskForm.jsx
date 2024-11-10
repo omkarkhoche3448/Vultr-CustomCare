@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import Select from 'react-select';
-import { X, UserCircle, LoaderCircle, Plus, Sparkles, FileText,ArrowRight  } from "lucide-react";
+import Select from "react-select";
+import {
+  X,
+  UserCircle,
+  LoaderCircle,
+  Plus,
+  Sparkles,
+  FileText,
+  ArrowRight,
+} from "lucide-react";
 import {
   generateScript,
   generateKeywords,
   createTask,
 } from "../../../services/operations/adminServices";
+import { updateTask } from "../../../services/operations/taskServices";
 import { toast } from "react-hot-toast";
 import { CustomerSelect, TeamMemberSelect } from "./Dropdown";
 import Loader from "../Loader";
@@ -305,7 +314,6 @@ const TaskForm = ({
   ];
 
   const onSubmitForm = async (data) => {
-    console.log("Submitting form data:", data.assignedMembers);
     try {
       const taskData = {
         ...data,
@@ -316,17 +324,23 @@ const TaskForm = ({
           id: member.id,
           name: member.name,
         })),
-        status: "PENDING",
-        createdAt: new Date().toISOString(),
+        status: isUpdate ? data.status : "PENDING",
+        createdAt: isUpdate ? task.createdAt : new Date().toISOString(),
       };
 
-      await createTask(taskData, token);
-      toast.success("Task created successfully!");
+      if (isUpdate) {
+        await updateTask(task.id, taskData, token);
+        toast.success("Task updated successfully!");
+      } else {
+        await createTask(taskData, token);
+        toast.success("Task created successfully!");
+      }
+
       onSubmit(taskData);
       onCancel();
     } catch (error) {
-      toast.error("Failed to create task");
-      console.error("Failed to create task:", error);
+      toast.error(isUpdate ? "Failed to update task" : "Failed to create task");
+      console.error("Form submission error:", error);
     }
   };
 
@@ -633,17 +647,10 @@ const TaskForm = ({
         <div className="mt-12">
           <div className="flex justify-end space-x-3">
             <button
-              type="button"
-              onClick={onCancel}
-              className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
               type="submit"
               className="inline-flex items-center px-4 py-2 lg:py-1 text-white font-medium text-sm md:text-base lg:text-lg bg-purple-600 hover:bg-purple-700 rounded-lg"
             >
-              {isUpdate ? "Update" : "Create"}
+              {isUpdate ? "Update Task" : "Create Task"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </button>
           </div>

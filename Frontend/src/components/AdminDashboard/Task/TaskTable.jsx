@@ -37,7 +37,7 @@ const TaskStatusBadge = ({ status }) => {
   );
 };
 
-const DropdownMenu = ({ trigger, children, align = "left" }) => {
+const DropdownMenu = ({ trigger, children, align = "right" }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
 
@@ -59,7 +59,7 @@ const DropdownMenu = ({ trigger, children, align = "left" }) => {
         <div
           className={`absolute z-10 mt-2 ${
             align === "right" ? "right-0" : "left-0"
-          } w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5`}
+          } w-48 `}
         >
           <div className="py-1">{children}</div>
         </div>
@@ -223,7 +223,7 @@ const TaskTable = ({
           <div className="overflow-x-auto">
             <div className="lg:w-full md:w-full w-[130%]  ">
               {/* Header */}
-              <div className="grid grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 bg-gray-50 p-4 items-center border-b border-gray-200">
+              <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_40px] md:grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 bg-gray-50 p-4 items-center border-b border-gray-200">
                 <div>
                   <input
                     type="checkbox"
@@ -266,7 +266,7 @@ const TaskTable = ({
                 {paginatedTasks.map((task) => (
                   <div
                     key={task.taskId}
-                    className={`grid grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 p-4 items-center ${
+                    className={`grid grid-cols-[40px_1fr_1fr_1fr_1fr_40px] md:grid-cols-[40px_2fr_2fr_1fr_2fr_40px] gap-4 p-4 items-center ${
                       selectedTasks.includes(task.id)
                         ? "bg-gray-100"
                         : "bg-white"
@@ -338,30 +338,30 @@ const TaskTable = ({
                     </div>
 
                     <div className="relative">
-                      <button
-                        onClick={() => {
-                          /* Toggle dropdown */
-                        }}
-                        className="text-gray-400 hover:text-gray-600"
+                      <DropdownMenu
+                        trigger={
+                          <button className="text-gray-400 hover:text-gray-600 sm:text-sm md:text-base lg:text-lg">
+                            <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                          </button>
+                        }
                       >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                      <div className="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                        <button
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => onEdit?.(task)}
-                        >
-                          <PencilIcon className="h-4 w-4 mr-2" />
-                          Edit
-                        </button>
-                        <button
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                          onClick={() => onDelete?.(task.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </button>
-                      </div>
+                        <div className="flex flex-col absolute right-8 -top-14 bg-white border border-gray-300 rounded-md shadow-lg z-50 w-40">
+                          <button
+                            className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => onEdit?.(task)}
+                          >
+                            <PencilIcon className="h-4 w-4 mr-2" />
+                            Edit
+                          </button>
+                          <button
+                            className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
+                            onClick={() => onDelete?.(task.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </button>
+                        </div>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}

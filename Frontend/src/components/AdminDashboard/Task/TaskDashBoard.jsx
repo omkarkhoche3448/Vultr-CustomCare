@@ -10,8 +10,9 @@ import {
 } from "../../../services/operations/adminServices";
 import Loader from "../Loader";
 import { setTasks } from "../../../slices/taskSlice";
-import {setRepresentatives} from "../../../slices/representativesSlice";
-import {setCustomers} from "../../../slices/customerSlice";
+import { setRepresentatives } from "../../../slices/representativesSlice";
+import { setCustomers } from "../../../slices/customerSlice";
+import { toast } from "react-hot-toast";
 
 const RepresentativeTaskDashboard = () => {
   const dispatch = useDispatch();
@@ -108,7 +109,6 @@ const RepresentativeTaskDashboard = () => {
   };
 
   const handleEdit = (task) => {
-    // Open edit modal/form
     setSelectedTask(task);
     setIsModalOpen(true);
   };
@@ -226,15 +226,22 @@ const RepresentativeTaskDashboard = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Assign New Task"
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null); // Clear selected task when closing
+        }}
+        title={selectedTask ? "Edit Task" : "Assign New Task"}
       >
         <TaskForm
-          task={tasks}
+          task={selectedTask} // Pass selected task for editing
           teamMembers={representatives}
           onSubmit={handleTaskSubmit}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setSelectedTask(null);
+          }}
           customers={customers}
+          isUpdate={!!selectedTask} // Pass flag to indicate edit mode
         />
       </Modal>
     </div>

@@ -308,7 +308,7 @@ const TaskDashboard = () => {
                     </button>
                   </div>
                 </div>
-
+                {console.log("fixing keywords here", task)}
                 {expandedTasks[task.projectTitle] && (
                   <div className="px-4 pb-4 border-t border-gray-100 mt-2 pt-4">
                     <div className="space-y-4">
@@ -318,6 +318,21 @@ const TaskDashboard = () => {
                         </h4>
                         <p className="text-sm text-gray-600">
                           {task.description}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                          Keywords To Cover
+                        </h4>
+                        <p className="text-sm text-gray-600 flex flex-wrap">
+                          {task.keywords.map((keyword) => (
+                            <span
+                              key={keyword}
+                              className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700 mr-2 mb-2"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
                         </p>
                       </div>
                       <div>

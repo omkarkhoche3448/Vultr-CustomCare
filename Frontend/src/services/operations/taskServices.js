@@ -10,7 +10,6 @@ const {
   GET_TASK_STATS_API,
 } = endpoints;
 
-
 // Create new task (Admin only)
 export const createTask = (taskData) => {
   return async (dispatch, getState) => {
@@ -47,38 +46,18 @@ export const createTask = (taskData) => {
 };
 
 // Update existing task (Admin only)
-export const updateTask = (taskId, updateData) => {
-  return async (dispatch, getState) => {
-    const toastId = toast.loading("Updating task...");
-    dispatch(setLoading(true));
+export const updateTask = async (taskData, token) => {
 
-    try {
-      const {
-        task: { userRole },
-      } = getState();
-
-      if (userRole !== "Admin") {
-        throw new Error("Unauthorized: Only Admins can update tasks");
-      }
-
-      const response = await makeAuthenticatedRequest(dispatch, getState, {
-        method: "PUT",
-        url: `${UPDATE_TASK_API}/${taskId}`,
-        data: updateData,
-      });
-
-      dispatch(updateTaskAction(response.task));
-      toast.success("Task updated successfully");
-      return response.task;
-    } catch (error) {
-      console.error("Update task error:", error);
-      toast.error(handleApiError(error));
-      throw error;
-    } finally {
-      dispatch(setLoading(false));
-      toast.dismiss(toastId);
-    }
-  };
+  try {
+    const response = await apiConnector("PUT", UPDATE_TASK_API, taskData, {
+      Authorization: `Bearer ${token}`,
+    });
+    toast.success("Task updated successfully", { id: toastId });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Failed to update task");
+    toast.error("Failed to update task");
+  }
 };
 
 // Delete task (Admin only)
