@@ -1,4 +1,4 @@
-# Vultr T2 - AI-Powered Customer Care Platform
+# AI-Powered Customer Care Platform
 
 # 📝 Description
 Vultr T2 is an innovative customer care platform that combines AI-powered interactions with real-time video communication. The platform enables efficient task management, customer engagement, and sales representative support through an integrated system of dashboards and AI features.
