@@ -4,15 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev-client": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "dev-chatbot": "cd ../AiCall/chatbot && php artisan serve",
-    "dev-aicall": "cd ../AiCall && npm run dev",
-    "dev-server": "cd ../Backend && npm run dev",
-    "dev": "concurrently -n \"client,server,aicall,aichatbot\" -c \"bgBlue,bgYellow,bgGreen,bgBlack\" \"npm run dev-client\" \"npm run dev-server\" \"npm run dev-aicall\" \"npm run dev-chatbot\""
-  },
+  "dev-client": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "dev-server": "cd ../Backend && npm run dev",
+  "dev": "concurrently -n \"client,server\" -c \"bgBlue,bgYellow\" \"npm run dev-client\" \"npm run dev-server\""
+},
+
   "dependencies": {
     "@reduxjs/toolkit": "^2.3.0",
     "agora-react-uikit": "^1.2.0",

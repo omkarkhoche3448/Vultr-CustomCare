@@ -1,16 +1,15 @@
 const { v4: uuidv4 } = require("uuid");
-const vultrConfig = require("../config/vultrConfig");
-require("dotenv").config();
-task_bucket = process.env.TASK_BUCKET;
-user_bucket = process.env.USER_BUCKET;
-csv_bucket = process.env.CSV_BUCKET;
+const { createTask, getAllTasks } = require("../models/taskModel");
+const { getAllRepresentatives } = require("../models/userModel");
+const { saveCustomersFromCSV, getCustomersByFilename } = require("../models/customerModel");
+const { generateChatCompletion } = require("../utils/mistralClient");
+const csv = require("csv-parser");
+const stream = require("stream");
 
 require("dotenv").config();
-vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
+const mistralApiKey = process.env.MISTRAL_API_KEY;
 
-const axios = require("axios");
-
-const createTask  = async (req, res) => {
+const createTaskController = async (req, res) => {
   const {
     category,
     customers,
@@ -54,73 +53,34 @@ const createTask  = async (req, res) => {
     priority,
     assignedDate,
     dueDate,
-    createdAt: new Date().toISOString(),
-  };
-
-  const params = {
-    Bucket: task_bucket,
-    Key: `tasks/${taskId}.json`,
-    Body: JSON.stringify(taskData),
-    ContentType: "application/json",
   };
 
   try {
-    await vultrConfig.upload(params).promise();
+    const task = await createTask(taskData);
     res
       .status(201)
-      .json({ message: "Task created and assigned successfully", taskId });
+      .json({ message: "Task created and assigned successfully", taskId: task.taskId });
   } catch (error) {
-    console.error(error);
+    console.error("Error creating task:", error);
     res.status(500).json({ message: "Failed to create and assign task" });
   }
 };
 
 const getRepresentatives = async (req, res) => {
   console.log("Fetching representatives");
-  const params = {
-    Bucket: user_bucket,
-    Prefix: "users/",
-  };
-
-  // console.log("Fetching users from bucket with params:", params);
 
   try {
-    const usersList = await vultrConfig.listObjectsV2(params).promise();
-    // console.log("Fetched user list:", usersList);
+    const representatives = await getAllRepresentatives();
+    
+    const formattedRepresentatives = representatives.map(rep => ({
+      name: rep.name,
+      email: rep.email,
+      skillset: rep.operations,
+      status: "Available",
+    }));
 
-    const representatives = await Promise.all(
-      usersList.Contents.map(async (file) => {
-        console.log("Processing file:", file.Key);
-
-        const user = await vultrConfig
-          .getObject({ Bucket: params.Bucket, Key: file.Key })
-          .promise();
-        const userData = JSON.parse(user.Body.toString());
-
-        console.log("Parsed user data:", userData);
-
-        if (userData.role === "Representative") {
-          console.log("User is a representative:", userData.name);
-          return {
-            name: userData.name,
-            email: userData.email,
-            skillset: userData.operations,
-            status: "Available",
-          };
-        }
-
-        console.log("User is not a representative:", userData.name);
-        return null;
-      })
-    );
-
-    const filteredRepresentatives = representatives.filter(
-      (rep) => rep !== null
-    );
-
-    console.log("Filtered representatives:", filteredRepresentatives);
-
-    res.status(200).json(filteredRepresentatives);
+    console.log("Filtered representatives:", formattedRepresentatives);
+    res.status(200).json(formattedRepresentatives);
   } catch (error) {
     console.error("Error fetching representatives:", error);
     res.status(500).json({ message: "Failed to fetch representatives" });
@@ -128,72 +88,57 @@ const getRepresentatives = async (req, res) => {
 };
 
 const fetchTasks = async (req, res) => {
-  const params = {
-    Bucket: task_bucket,
-    Prefix: "tasks/",
-  };
-
   try {
-    const taskList = await vultrConfig.listObjectsV2(params).promise();
-    const tasks = await Promise.all(
-      taskList.Contents.map(async (file) => {
-        const task = await vultrConfig
-          .getObject({ Bucket: params.Bucket, Key: file.Key })
-          .promise();
-        return JSON.parse(task.Body.toString());
-      })
-    );
+    const tasks = await getAllTasks();
     res.status(200).json(tasks);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching tasks:", error);
     res.status(500).json({ message: "Failed to fetch tasks" });
   }
 };
 
-const csv = require("csv-parser");
 const multer = require("multer");
-const stream = require("stream");
 
 // Set up multer for file handling
 const upload = multer({ storage: multer.memoryStorage() });
-const uploadCSV = async (req, res) => {
-  // console.log("Received file:", req.file); // Add this line
 
+const uploadCSV = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded." });
   }
 
   const { originalname, buffer } = req.file;
 
-  // Prepare the upload parameters
-  const params = {
-    Bucket: csv_bucket,
-    Key: `csv/${originalname}`,
-    Body: buffer,
-    ContentType: "text/csv",
-  };
-
   try {
-    // Upload the CSV file
-    await vultrConfig.upload(params).promise();
-
-    // Now, parse the CSV data
+    // Parse the CSV data
     const results = [];
     const readableStream = new stream.PassThrough();
-    readableStream.end(buffer); // End the stream with the buffer data
+    readableStream.end(buffer);
 
     readableStream
       .pipe(csv())
       .on("data", (data) => results.push(data))
-      .on("end", () => {
-        // console.log("Parsed CSV data:", results);
-        res.status(201).json({
-          message: "CSV uploaded and processed successfully",
-          data: results,
-        });
+      .on("end", async () => {
+        try {
+          // Save customers to MongoDB
+          await saveCustomersFromCSV(results, originalname);
+          
+          console.log("Parsed CSV data:", results);
+          res.status(201).json({
+            message: "CSV uploaded and processed successfully",
+            data: results,
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          res.status(500).json({ message: "Failed to save CSV data to database" });
+        }
+      })
+      .on("error", (error) => {
+        console.error("CSV parsing error:", error);
+        res.status(500).json({ message: "Failed to parse CSV file" });
       });
   } catch (error) {
-    console.error(error);
+    console.error("Upload error:", error);
     res.status(500).json({ message: "Failed to upload CSV" });
   }
 };
@@ -219,85 +164,38 @@ const getCustomerData = async (req, res) => {
     }
 
     try {
-      const listAllParams = {
-        Bucket: csv_bucket,
-      };
+      const customers = await getCustomersByFilename(filename);
+      
+      if (customers && customers.length > 0) {
+        // Convert MongoDB documents to plain objects, excluding MongoDB fields
+        const cleanCustomers = customers.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          productDemand: customer.productDemand,
+          category: customer.category,
+          email: customer.email
+        }));
 
-      const allObjects = await vultrConfig
-        .listObjectsV2(listAllParams)
-        .promise();
-
-      // Check if we can find our file
-      const csvFolder = allObjects.Contents.filter((obj) =>
-        obj.Key.startsWith("csv/")
-      );
-
-      // Look for the exact file
-      const fileKey = `csv/${filename}`;
-      const exactFile = allObjects.Contents.find(
-        (obj) => obj.Key.toLowerCase() === fileKey.toLowerCase()
-      );
-
-      if (exactFile) {
-        // Use the exact key from the bucket (preserves case)
-        const params = {
-          Bucket: csv_bucket,
-          Key: exactFile.Key,
-        };
-
-        const csvFile = await vultrConfig.getObject(params).promise();
-
-        if (!csvFile.Body) {
-          throw new Error("File body is empty");
-        }
-
-        const csvData = [];
-
-        // Create readable stream from buffer
-        const readable = stream.Readable.from(csvFile.Body);
-
-        return new Promise((resolve, reject) => {
-          readable
-            .pipe(
-              csv({
-                skipEmptyLines: true,
-                trim: true,
-              })
-            )
-            .on("data", (row) => {
-              csvData.push(row);
-            })
-            .on("end", () => {
-              res.status(200).json({
-                success: true,
-                data: csvData,
-              });
-              resolve();
-            })
-            .on("error", (error) => {
-              res.status(500).json({
-                success: false,
-                message: "Failed to process CSV",
-                error: error.message,
-              });
-              reject(error);
-            });
+        res.status(200).json({
+          success: true,
+          data: cleanCustomers,
         });
       } else {
         return res.status(404).json({
           success: false,
-          message: "CSV file not found",
-          availableFiles: csvFolder.map((obj) => obj.Key),
+          message: "CSV file not found or no data available",
         });
       }
-    } catch (listError) {
+    } catch (dbError) {
+      console.error("Database error:", dbError);
       return res.status(500).json({
         success: false,
-        message: "Failed to list bucket contents",
-        error: listError.message,
+        message: "Failed to retrieve data from database",
+        error: dbError.message,
       });
     }
   } catch (error) {
+    console.error("Error in getCustomerData:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to retrieve CSV data",
@@ -317,30 +215,11 @@ const generate_script = async (req, res) => {
   }
 
   try {
-    // Call Vultr Llama 3 API
-    const response = await axios.post(
-      "https://api.vultrinference.com/v1/chat/completions",
-      {
-        model: "llama2-13b-chat-Q5_K_M",
-        messages: [
-          {
-            role: "user",
-            content: task + " " + JSON.stringify(description),
-          },
-        ],
-        max_tokens: 2048,
-        temperature: 0.8,
-      },
-      {
-        headers: {
-          Authorization: vultr_llama_endpoint,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const { choices } = response.data;
-    let script = choices[0].message.content;
+    // Prepare the prompt for Mistral AI
+    const userMessage = `${task} ${JSON.stringify(description)}`;
+    
+    // Call Mistral AI
+    let script = await generateChatCompletion(userMessage, 2048, 0.8);
 
     // Generalize processing of the script
     // Remove unwanted tokens and clean up the text
@@ -358,7 +237,7 @@ const generate_script = async (req, res) => {
 
     return res.json({ script });
   } catch (error) {
-    console.error("Error calling Vultr API:", error);
+    console.error("Error calling Mistral API:", error);
     return res
       .status(500)
       .json({ error: "An error occurred while generating the script." });
@@ -371,30 +250,11 @@ const generate_keywords = async (req, res) => {
     return res.status(400).json({ error: "Script and task are required." });
   }
   try {
-    // Call Vultr Llama 3 API
-    const response = await axios.post(
-      "https://api.vultrinference.com/v1/chat/completions",
-      {
-        model: "llama2-13b-chat-Q5_K_M",
-        messages: [
-          {
-            role: "user",
-            content: task + " " + script,
-          },
-        ],
-        max_tokens: 2048,
-        temperature: 0.8,
-      },
-      {
-        headers: {
-          Authorization: vultr_llama_endpoint,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const { choices } = response.data;
-    const keywords = choices[0].message.content;
+    // Prepare the prompt for Mistral AI
+    const userMessage = `${task} ${script}`;
+    
+    // Call Mistral AI
+    const keywords = await generateChatCompletion(userMessage, 2048, 0.8);
 
     // Initialize arrays to hold personal and product factors
     const personalFactors = [];
@@ -425,7 +285,7 @@ const generate_keywords = async (req, res) => {
       "product keywords": productKeywords.join(", "),
     });
   } catch (error) {
-    console.error("Error calling Vultr API:", error);
+    console.error("Error calling Mistral API:", error);
     return res
       .status(500)
       .json({ error: "An error occurred while generating the keywords." });
@@ -433,7 +293,7 @@ const generate_keywords = async (req, res) => {
 };
 
 module.exports = {
-  createTask ,
+  createTask: createTaskController,
   getRepresentatives,
   fetchTasks,
   uploadCSV,

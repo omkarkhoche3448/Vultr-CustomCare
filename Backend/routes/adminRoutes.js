@@ -4,7 +4,8 @@ const adminController = require('../controllers/adminController');
 const router = express.Router();
 const bodyParser = require('body-parser');
 require('dotenv').config();
-vultr_llama_endpoint = process.env.VULTR_LLAMA_ENDPOINT;
+
+const mistralApiKey = process.env.MISTRAL_API_KEY;
 
 
 // Route to create a new task
@@ -32,15 +33,15 @@ router.post('/upload-csv', authenticate, authorizeAdmin, upload.single('file'), 
 // router.get('/customers', authenticate, authorizeAdmin, adminController.getCustomerData);
 router.get('/customers',  adminController.getCustomerData);
 
-// Middleware to check GenAI authorization header
+// Middleware to check Mistral AI authorization header
 const checkGenAIToken = (req, res, next) => {
     const genAIToken = req.headers['genai-auth'];
 
-    if (!genAIToken || genAIToken.trim() !== vultr_llama_endpoint.trim()) {
-        console.log(genAIToken);
-        return res.status(401).json({ message: 'Unauthorized: Invalid GenAI token' });
+    if (!genAIToken || genAIToken.trim() !== mistralApiKey.trim()) {
+        console.log('Invalid Mistral API key provided:', genAIToken);
+        return res.status(401).json({ message: 'Unauthorized: Invalid Mistral API key' });
     }
-    // console.log("token agya");
+    console.log("Mistral API key verified successfully");
     next();
 };
 
