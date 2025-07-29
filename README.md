@@ -3,6 +3,11 @@
 # 📝 Description
 Vultr T2 is an innovative customer care platform that combines AI-powered interactions with real-time video communication. The platform enables efficient task management, customer engagement, and sales representative support through an integrated system of dashboards and AI features.
 
+## 🚀 Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/nwQwF9w8Xjk/0.jpg)](https://youtu.be/nwQwF9w8Xjk)
+
+
 # 🌟 Key Features
 ## 🤖 AI-Powered Task Management
 ####        Smart task creation with automated scripts
